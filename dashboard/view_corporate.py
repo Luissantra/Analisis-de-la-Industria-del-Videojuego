@@ -4,42 +4,19 @@ import base64
 import sqlite3
 import config
 from pathlib import Path
-from charts_corporate import create_sunburst_chart, create_genre_and_score_chart, PARENT_COLOR_MAP
+from charts_corporate import create_sunburst_chart, create_treemap_chart, create_genre_and_score_chart, create_genre_pie_chart, create_acquisition_timeline_chart, create_score_distribution_chart, PARENT_COLOR_MAP
+from model_corporate import get_all_corporate_data, get_conglomerate_data
 
+# Nombres abreviados para evitar saltos de línea en las tarjetas
+SHORT_NAMES = {
+    "Microsoft Gaming (Xbox, ZeniMax, Activision Blizzard)": "Microsoft Gaming",
+    "Sony Interactive Entertainment (PlayStation Studios)": "Sony Interactive",
+    "Electronic Arts (EA)": "Electronic Arts",
+    "Take-Two Interactive": "Take-Two",
+    "Independent & Other Publishers": "Indies & Otros"
+}
 
-
-@st.cache_data(show_spinner="Cargando estructura corporativa...")
-def load_corporate_data():
-    """Carga y cruza la matriz de estudios y juegos directamente desde SQLite."""
-    conn = sqlite3.connect(config.DATABASE_PATH)
-    
-    query = """
-        SELECT 
-            c.name as Parent,
-            s.name as "Studio Name",
-            s.city as City,
-            s.country as Country,
-            s.acquisition_year as Acquisition_Year,
-            COALESCE(g.name, 'No registrado') as Top_Game,
-            COALESCE(g.genres, 'Desconocido') as Genres,
-            g.metacritic as Metacritic
-        FROM conglomerates c
-        JOIN notable_studios s ON c.id = s.parent_id
-        LEFT JOIN games_metadata g ON s.id = g.studio_id
-    """
-    
-    df = pd.read_sql_query(query, conn)
-    conn.close()
-    
-    # Aseguramos de rellenar posibles nulos por consistencia en la vista
-    df['City'] = df['City'].fillna('N/A')
-    df['Country'] = df['Country'].fillna('N/A')
-    df['Top_Game'] = df['Top_Game'].fillna('No registrado')
-    df['Acquisition_Year'] = df['Acquisition_Year'].fillna('No registrado')
-    df['Genres'] = df['Genres'].fillna('Desconocido')
-    
-    return df
-
+@st.cache_data
 def get_base64_image(empresa_name):
     """Lee el logo local y lo convierte a base64 para inyectarlo en HTML."""
     safe_name = "".join([c if c.isalnum() or c in " &()_-" else "_" for c in empresa_name])
@@ -72,11 +49,20 @@ def render_corporate_module():
     </style>
     """, unsafe_allow_html=True)
     
-    df_corp = load_corporate_data()
+    # Extraemos solo los nombres únicos para la galería de navegación usando la vista global
+    df_corp_all = get_all_corporate_data()
     if 'selected_parent' not in st.session_state:
         st.session_state.selected_parent = "Global"
 
-    empresas = list(df_corp['Parent'].unique())
+    # Forzamos el orden de las empresas basándonos en nuestro mapa de colores predefinido
+    raw_empresas = list(df_corp_all['Parent'].unique())
+    empresas = [p for p in PARENT_COLOR_MAP.keys() if p in raw_empresas]
+    
+    # Añadimos cualquier empresa que pudiera faltar (por seguridad)
+    for p in raw_empresas:
+        if p not in empresas:
+            empresas.append(p)
+            
     seleccion = st.session_state.selected_parent
     
     # 1. Galería de Logos con Interacción Visual (Opacidad)
@@ -94,6 +80,7 @@ def render_corporate_module():
                 opacity = "1.0" if is_selected or is_global else "0.3"
                 brand_color = PARENT_COLOR_MAP.get(empresa, "#444444")
                 img_b64 = get_base64_image(empresa)
+                display_name = SHORT_NAMES.get(empresa, empresa)
                 
                 bg_color = "rgba(240, 242, 246, 0.92)" # Blanco suavizado para menos contraste con el fondo oscuro
                 div_style = (
@@ -113,11 +100,11 @@ def render_corporate_module():
                     # Fallback por si falta el logo local
                     st.markdown(f'<div class="corp-card" style="{div_style}"><span style="color:#000000; font-weight:bold; font-size:12px; text-align:center;">{empresa}</span></div>', unsafe_allow_html=True)
                 
-                # Botón de control
+                # Botón terciario (sin fondo ni bordes) para que actúe como una etiqueta de texto clicable
                 if is_selected:
-                    st.button("✅ Viendo", key=f"btn_{i}", disabled=True, use_container_width=True)
+                    st.button(f"**{display_name}**", key=f"btn_{i}", help=empresa, disabled=True, use_container_width=True, type="primary")
                 else:
-                    st.button("Analizar", key=f"btn_{i}", on_click=seleccionar_matriz, args=(empresa,), use_container_width=True)
+                    st.button(display_name, key=f"btn_{i}", help=empresa, on_click=seleccionar_matriz, args=(empresa,), use_container_width=True, type="tertiary")
 
     # 2. Control Superior
     col_v, col_btn = st.columns([4, 1])
@@ -132,7 +119,7 @@ def render_corporate_module():
     # 3. Representación Gráfica
     if seleccion == "Global":
         st.subheader("🌍 Visión Macro (Ecosistema Completo)")
-        fig = create_sunburst_chart(df_corp)
+        fig = create_sunburst_chart(df_corp_all)
         
         # Capturamos el evento de clic nativo (soportado en Streamlit >= 1.35)
         try:
@@ -146,9 +133,25 @@ def render_corporate_module():
         except TypeError:
             # Fallback por si la versión de Streamlit es antigua y no soporta on_select
             st.plotly_chart(fig, use_container_width=True)
+            
+        st.write("---")
+        st.markdown("#### 🏆 Análisis Global del Ecosistema")
+        
+        st.markdown("##### 🎯 Consistencia y Distribución de Calidad Global (Metacritic)")
+        fig_dist_global = create_score_distribution_chart(df_corp_all, is_global=True)
+        if fig_dist_global:
+            st.plotly_chart(fig_dist_global, use_container_width=True)
+            
+        st.write("---")
+        st.markdown("##### 🎲 Matriz de Portfolio (Volumen vs Calidad por Género)")
+        fig_genres_global = create_genre_and_score_chart(df_corp_all)
+        if fig_genres_global:
+            st.plotly_chart(fig_genres_global, use_container_width=True)
+        else:
+            st.info("ℹ️ Ejecuta `etl_games.py` para habilitar gráficos de géneros y valoraciones.")
     else:
         st.subheader(f"🔍 Análisis Estructural: {seleccion}")
-        df_filtrado = df_corp[df_corp['Parent'] == seleccion]
+        df_filtrado = get_conglomerate_data(seleccion)
         brand_color = PARENT_COLOR_MAP.get(seleccion, "#444444")
         
         c1, c2, c3 = st.columns(3)
@@ -158,27 +161,60 @@ def render_corporate_module():
         
         st.write("---")
         
-        col_grafico, col_lista = st.columns([1.5, 1])
+        col_grafico, col_lista = st.columns([1, 1.3])
         
         with col_grafico:
-            st.markdown("#### Distribución Organizativa")
-            fig = create_sunburst_chart(df_filtrado)
+            st.markdown("#### Jerarquía y Presencia Global")
+            fig = create_treemap_chart(df_filtrado)
             st.plotly_chart(fig, use_container_width=True)
             
         with col_lista:
             st.markdown("### 🎮 Directorio de Estudios")
-            for index, row in df_filtrado.iterrows():
-                with st.expander(f"🏢 {row['Studio Name']}"):
-                    st.write(f"**📍 Sede:** {row['City']}, {row['Country']}")
-                    st.write(f"**🕹️ Juego Clave:** {row['Top_Game']}")
-                    st.write(f"**🗓️ Adquisición/Fundación:** {row['Acquisition_Year']}")
+            
+            # Preparamos el dataframe para visualización
+            df_display = df_filtrado[['Studio Name', 'City', 'Country', 'Acquisition_Year', 'Top_Game', 'Metacritic']].copy()
+            df_display.rename(columns={
+                'Studio Name': 'Estudio',
+                'City': 'Ciudad',
+                'Country': 'País',
+                'Acquisition_Year': 'Año (Adq/Fund)',
+                'Top_Game': 'Juego Destacado',
+                'Metacritic': 'Nota'
+            }, inplace=True)
+            
+            st.dataframe(
+                df_display,
+                use_container_width=True,
+                hide_index=True,
+                height=400 # Altura ajustada para alinear con el gráfico Sunburst
+            )
 
         st.markdown("---")
         
-        st.markdown("#### 🏆 Análisis de Portfolio (Géneros y Calidad)")
-        fig_genres = create_genre_and_score_chart(df_filtrado, color=brand_color)
+        st.markdown("#### 🏆 Análisis de Portfolio e Histórico de Expansión")
         
-        if fig_genres:
-            st.plotly_chart(fig_genres, use_container_width=True)
+        col_timeline, col_dist = st.columns([1.2, 1])
+        
+        with col_timeline:
+            st.markdown("##### 📈 Expansión (Adquisiciones/Fundaciones)")
+            fig_timeline = create_acquisition_timeline_chart(df_filtrado, color=brand_color)
+            if fig_timeline:
+                st.plotly_chart(fig_timeline, use_container_width=True)
+            else:
+                st.info("ℹ️ No hay suficientes datos de años registrados para este conglomerado.")
+                
+        with col_dist:
+            st.markdown("##### 🎯 Consistencia de Calidad (Metacritic)")
+            fig_dist = create_score_distribution_chart(df_filtrado, color=brand_color)
+            if fig_dist:
+                st.plotly_chart(fig_dist, use_container_width=True)
+            else:
+                st.info("ℹ️ Ejecuta `etl_games.py` para obtener datos de Metacritic.")
+                
+        st.write("---")
+        st.markdown("##### 🎲 Distribución de Géneros")
+        fig_pie = create_genre_pie_chart(df_filtrado, color=brand_color)
+        if fig_pie:
+            st.plotly_chart(fig_pie, use_container_width=True)
         else:
-            st.info("ℹ️ Ejecuta el script `etl_games.py` con tu clave API para habilitar los gráficos de géneros y valoraciones.")
+            st.info("ℹ️ No hay suficientes datos de géneros para este conglomerado.")

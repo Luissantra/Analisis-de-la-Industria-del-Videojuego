@@ -105,10 +105,65 @@ def create_sunburst_chart(df):
     )
     return fig
 
+def create_treemap_chart(df):
+    """
+    Crea un gráfico Tree Map para visualizar la jerarquía de los estudios
+    de un solo conglomerado agrupados por País. 
+    El tamaño es la cantidad de juegos, y el color es la nota media.
+    """
+    df_clean = df.copy()
+    
+    # Convertir Metacritic a numérico (los que no tienen nota se ignoran temporalmente para la media)
+    df_clean['Metacritic_Num'] = pd.to_numeric(df_clean['Metacritic'], errors='coerce')
+    
+    # Agrupar por Estudio para calcular cantidad de juegos y nota media
+    df_grouped = df_clean.groupby(['Country', 'City', 'Studio Name', 'Acquisition_Year']).agg(
+        Game_Count=('Top_Game', 'count'),
+        Avg_Metacritic=('Metacritic_Num', 'mean'),
+        Top_Games=('Top_Game', lambda x: '<br> • '.join([g for g in x.unique() if str(g) != 'No registrado'][:4]))
+    ).reset_index()
+    
+    # Rellenamos los que no tienen nota con una media neutra (ej: 50) para que puedan dibujarse
+    overall_mean = df_grouped['Avg_Metacritic'].mean()
+    fill_val = 50 if pd.isna(overall_mean) else overall_mean
+    df_grouped['Avg_Metacritic'] = df_grouped['Avg_Metacritic'].fillna(fill_val)
+    
+    fig = px.treemap(
+        df_grouped,
+        path=[px.Constant("Portfolio Global"), 'Country', 'Studio Name'],
+        values='Game_Count',
+        color='Avg_Metacritic',
+        color_continuous_scale='RdYlGn',
+        range_color=[40, 95], # Rango estándar para notas
+        hover_data=['City', 'Top_Games', 'Acquisition_Year', 'Avg_Metacritic'],
+        template="plotly_dark"
+    )
+    
+    fig.update_traces(
+        marker=dict(line=dict(color='#0E1117', width=1.5)),
+        textinfo="label",
+        hovertemplate=(
+            "<b>%{label}</b><br>"
+            "📍 Sede: %{customdata[0]}, %{parent}<br>"
+            "🎮 Juegos:<br> • %{customdata[1]}<br>"
+            "🗓️ Adquisición: %{customdata[2]}<br>"
+            "⭐ Nota Media: %{customdata[3]:.1f}<extra></extra>"
+        )
+    )
+    
+    fig.update_layout(
+        margin=dict(t=20, l=0, r=0, b=20),
+        height=500,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        coloraxis_colorbar=dict(title="Nota<br>Media")
+    )
+    return fig
+
 def create_genre_and_score_chart(df, color="#0070FF"):
     """
-    Crea un gráfico de barras mostrando la cantidad de juegos por género 
-    del conglomerado, incluyendo información de Metacritic.
+    Crea una matriz de portfolio (Gráfico de Burbujas) cruzando el volumen 
+    de juegos por género con su calidad promedio (Metacritic).
     """
     if 'Genres' not in df.columns or df['Genres'].eq('Desconocido').all():
         return None
@@ -122,21 +177,195 @@ def create_genre_and_score_chart(df, color="#0070FF"):
     if df_exploded.empty:
         return None
         
-    # Agrupar por género y calcular la media de metacritic
+    # Convertir a numérico y agrupar por género
+    df_exploded['Metacritic_Num'] = pd.to_numeric(df_exploded['Metacritic'], errors='coerce')
     genre_stats = df_exploded.groupby('Genre_List').agg(
         Count=('Studio Name', 'count'),
-        Avg_Metacritic=('Metacritic', 'mean')
+        Avg_Metacritic=('Metacritic_Num', 'mean'),
+        Top_Games=('Top_Game', lambda x: '<br> • '.join(x.unique()[:3])) # Guardar top 3 juegos del género
     ).reset_index()
     
-    genre_stats = genre_stats.sort_values(by='Count', ascending=True)
+    # Limpiar nulos para el gráfico 2D
+    genre_stats = genre_stats.dropna(subset=['Avg_Metacritic'])
+    if genre_stats.empty:
+        return None
     
-    fig = px.bar(
-        genre_stats, x='Count', y='Genre_List', orientation='h', template="plotly_dark",
-        labels={'Count': 'Número de Juegos', 'Genre_List': 'Género', 'Avg_Metacritic': 'Nota Media (Metacritic)'},
-        hover_data=['Avg_Metacritic']
+    # Matriz de Portfolio (Bubble Chart)
+    fig = px.scatter(
+        genre_stats, x='Count', y='Avg_Metacritic', size='Count',
+        color='Avg_Metacritic', color_continuous_scale='RdYlGn', range_color=[40, 95],
+        text='Genre_List', custom_data=['Genre_List', 'Top_Games'],
+        template="plotly_dark"
     )
-    fig.update_traces(marker_color=color, marker_line_color='#E5E5E5', marker_line_width=1,
-                      hovertemplate="<b>%{y}</b><br>Juegos: %{x}<br>Nota Media: %{customdata[0]:.1f}<extra></extra>")
-    fig.update_layout(margin=dict(t=20, l=0, r=0, b=20), yaxis={'categoryorder': 'total ascending'},
-                      xaxis_title="Cantidad de Juegos (Estudios)", yaxis_title="")
+    
+    fig.update_traces(
+        textposition='top center',
+        marker=dict(line=dict(color='#0E1117', width=1)),
+        hovertemplate="<b>%{customdata[0]}</b><br>Juegos: %{x}<br>Nota Media: %{y:.1f}<br><br><b>Destacados:</b><br> • %{customdata[1]}<extra></extra>"
+    )
+    
+    fig.update_layout(
+        margin=dict(t=20, l=0, r=0, b=20),
+        xaxis_title="Cantidad de Juegos (Volumen)",
+        yaxis_title="Nota Media Metacritic (Calidad)",
+        coloraxis_showscale=False # Redundante con el eje Y
+    )
+    
+    # Línea base de calidad "Aceptable"
+    fig.add_hline(y=75, line_dash="dash", line_color="rgba(255,255,255,0.2)", annotation_text="Calidad Standard (75+)")
+    
+    return fig
+
+def create_genre_pie_chart(df, color="#0070FF"):
+    """
+    Crea un gráfico de tarta (Pie Chart) para la distribución de géneros
+    de un conglomerado específico, limitado a 5 categorías (Top 4 + Otros).
+    """
+    if 'Genres' not in df.columns or df['Genres'].eq('Desconocido').all():
+        return None
+        
+    df_genres = df.copy()
+    df_genres = df_genres[df_genres['Genres'] != 'Desconocido']
+    
+    # Calculamos el total de portfolios/estudios analizados reales (antes de explotar la lista)
+    total_estudios = len(df_genres)
+    
+    df_genres['Genre_List'] = df_genres['Genres'].str.split(', ')
+    df_exploded = df_genres.explode('Genre_List')
+    
+    if df_exploded.empty:
+        return None
+        
+    genre_counts = df_exploded['Genre_List'].value_counts().reset_index()
+    genre_counts.columns = ['Genre', 'Count']
+    
+    # Limitar a 5 categorías (Top 4 + "Otros")
+    if len(genre_counts) > 5:
+        top_4 = genre_counts.iloc[:4]
+        otros_count = genre_counts.iloc[4:]['Count'].sum()
+        otros_df = pd.DataFrame([{'Genre': 'Otros', 'Count': otros_count}])
+        genre_counts = pd.concat([top_4, otros_df], ignore_index=True)
+        
+    fig = px.pie(
+        genre_counts, names='Genre', values='Count', hole=0.65,
+        template="plotly_dark", color_discrete_sequence=px.colors.qualitative.Vivid
+    )
+    
+    fig.update_traces(
+        textposition='outside', 
+        textinfo='label+percent',
+        textfont=dict(family="system-ui, Arial, sans-serif", size=16, color='white'),
+        marker=dict(line=dict(color='#0E1117', width=2.5)),
+        hovertemplate="<b>%{label}</b><br>Frecuencia: %{value} etiquetas<extra></extra>",
+        pull=[0.015] * len(genre_counts) # Separación sutil entre los gajos (Efecto "Exploded Donut")
+    )
+    
+    # Añadir la métrica central (Total de Estudios) con el color de la marca y fuente mejorada
+    fig.add_annotation(
+        text=f"<span style='font-family: system-ui, Arial, sans-serif; font-size:46px; font-weight:900; color:{color};'>{total_estudios}</span><br><span style='font-family: system-ui, Arial, sans-serif; font-size:14px; font-weight:500; color:#B0B0B0; letter-spacing: 1px;'>ESTUDIOS<br>EVALUADOS</span>",
+        x=0.5, y=0.5,
+        showarrow=False,
+        align="center"
+    )
+    
+    fig.update_layout(
+        margin=dict(t=30, l=60, r=60, b=30), # Ampliamos aún más el margen lateral por el aumento de fuente
+        showlegend=False,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
+    )
+    return fig
+
+def create_acquisition_timeline_chart(df, color="#0070FF"):
+    """
+    Crea un gráfico de línea de tiempo de los años de adquisición/fundación de los estudios.
+    """
+    # 1. Filtrar valores no válidos o desconocidos
+    df_time = df[~df['Acquisition_Year'].isin(['No registrado', 'N/A', 'Desconocido', None])].copy()
+    if df_time.empty:
+        return None
+
+    # 2. Asegurar que el año es numérico
+    df_time['Acquisition_Year'] = pd.to_numeric(df_time['Acquisition_Year'], errors='coerce')
+    df_time = df_time.dropna(subset=['Acquisition_Year'])
+    df_time['Acquisition_Year'] = df_time['Acquisition_Year'].astype(int)
+
+    # 3. Agrupar por año contando estudios y guardando sus nombres para el tooltip
+    timeline_stats = df_time.groupby('Acquisition_Year').agg(
+        Count=('Studio Name', 'count'),
+        Studios=('Studio Name', lambda x: '<br> • '.join(x))
+    ).reset_index()
+
+    # 4. Crear el gráfico de barras (Timeline)
+    fig = px.bar(
+        timeline_stats,
+        x='Acquisition_Year',
+        y='Count',
+        template="plotly_dark",
+        custom_data=['Studios']
+    )
+
+    fig.update_traces(
+        marker_color=color,
+        hovertemplate="<b>Año: %{x}</b><br>Adquisiciones/Fundaciones: %{y}<br><br><b>Estudios:</b><br> • %{customdata[0]}<extra></extra>"
+    )
+
+    fig.update_layout(
+        margin=dict(t=20, l=0, r=0, b=20),
+        xaxis_title="Año",
+        yaxis_title="Cantidad de Estudios",
+        xaxis=dict(type='category') # Tratar el eje X como categoría para evitar decimales en los años
+    )
+    return fig
+
+def create_score_distribution_chart(df, color="#0070FF", is_global=False):
+    """
+    Crea un gráfico de Violín (Violin Plot) para evaluar la consistencia y dispersión
+    de las notas de Metacritic de un conglomerado.
+    """
+    df_scores = df.copy()
+    df_scores['Metacritic_Num'] = pd.to_numeric(df_scores['Metacritic'], errors='coerce')
+    df_scores = df_scores.dropna(subset=['Metacritic_Num'])
+
+    if df_scores.empty:
+        return None
+
+    if is_global:
+        df_scores['Ecosistema'] = 'Industria Global'
+        fig = px.violin(
+            df_scores,
+            x='Ecosistema',
+            y='Metacritic_Num',
+            box=True,
+            points="all",
+            custom_data=['Studio Name', 'Top_Game', 'Parent'],
+            color_discrete_sequence=["#888888"],
+            template="plotly_dark"
+        )
+        fig.update_traces(
+            hovertemplate="<b>%{customdata[0]}</b> (%{customdata[2]})<br>Juego: %{customdata[1]}<br>Nota: %{y}<extra></extra>",
+            meanline_visible=True
+        )
+    else:
+        fig = px.violin(
+            df_scores,
+            y='Metacritic_Num',
+            box=True,
+            points="all",
+            custom_data=['Studio Name', 'Top_Game'],
+            color_discrete_sequence=[color],
+            template="plotly_dark"
+        )
+        fig.update_traces(
+            hovertemplate="<b>%{customdata[0]}</b><br>Juego: %{customdata[1]}<br>Nota: %{y}<extra></extra>",
+            meanline_visible=True
+        )
+
+    fig.update_layout(
+        margin=dict(t=20, l=0, r=0, b=20),
+        xaxis_title="",
+        yaxis_title="Metacritic Score",
+        xaxis=dict(showticklabels=False),
+        showlegend=False
+    )
     return fig

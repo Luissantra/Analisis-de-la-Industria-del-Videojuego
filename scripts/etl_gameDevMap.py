@@ -47,8 +47,16 @@ def run_geo_etl():
     print("Iniciando proceso ETL para el mapa geográfico de desarrolladoras...")
     
     # 1. Extract
-    df_raw = pd.read_csv(config.RAW_GAMEDEVMAP_CSV)
+    geocoded_path = str(config.RAW_GAMEDEVMAP_CSV).replace('.csv', '_geocoded.csv')
+    if Path(geocoded_path).exists():
+        df_raw = pd.read_csv(geocoded_path)
+    else:
+        df_raw = pd.read_csv(config.RAW_GAMEDEVMAP_CSV)
 
+    # Prevenir KeyError si las coordenadas no existen (ej. si se omitió la geocodificación)
+    for col in ['Latitude', 'Longitude']:
+        if col not in df_raw.columns:
+            df_raw[col] = None
 
     # 2. Transform
     print("Transformando datos...")
