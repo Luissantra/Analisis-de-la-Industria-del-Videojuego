@@ -3,8 +3,9 @@ import config
 from scripts.get_market_data import obtener_datos_preparados
 from scripts.get_gameDevMap import obtener_datos_gamedevmap
 from scripts.etl_gameDevMap import run_geo_etl
+from scripts.etl_igdb import process_studios_to_mdm
 from scripts.build_db import build_database
-
+from scripts.audit_data import run_audit
 
 def run_pipeline():
   """
@@ -18,6 +19,7 @@ def run_pipeline():
   parser.add_argument("--skip-extract", action="store_true", help="Saltar la fase de extracción de datos.")
   parser.add_argument("--skip-transform", action="store_true", help="Saltar la fase de transformación de datos.")
   parser.add_argument("--skip-load", action="store_true", help="Saltar la fase de carga a la base de datos.")
+  parser.add_argument("--skip-audit", action="store_true", help="Saltar la fase de auditoría de calidad de datos.")
 
   args = parser.parse_args()
 
@@ -30,6 +32,7 @@ def run_pipeline():
       print("Ejecutando fase de extracción de datos...")
       obtener_datos_preparados()
       obtener_datos_gamedevmap(all_locations=True)  # Obtenemos datos de todas las ubicaciones
+      process_studios_to_mdm() # Integración con IGDB para Master Data
   else:
       print("Saltando fase de extracción de datos...")
 
@@ -46,6 +49,13 @@ def run_pipeline():
       build_database()
   else:
       print("Saltando fase de carga a la base de datos...")
+
+  # 4. Auditoría de Datos
+  if not args.skip_audit:
+      print("Ejecutando fase de auditoría de calidad de datos...")
+      run_audit()
+  else:
+      print("Saltando fase de auditoría de calidad de datos...")
 
   print("Pipeline completado!")
 

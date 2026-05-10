@@ -1,0 +1,18 @@
+[
+  {"name": "NES", "manufacturer": "Nintendo", "release_year": 1983, "units_sold_millions": 61.91, "generation": "3ra Gen", "wiki_image": "NES-Console-Set.png"},
+  {"name": "Super Nintendo", "manufacturer": "Nintendo", "release_year": 1990, "units_sold_millions": 49.10, "generation": "4ta Gen", "wiki_image": "SNES-Mod1-Console-Set.png"},
+  {"name": "Nintendo 64", "manufacturer": "Nintendo", "release_year": 1996, "units_sold_millions": 32.93, "generation": "5ta Gen", "wiki_image": "Nintendo-64-wController-L.png"},
+  {"name": "GameCube", "manufacturer": "Nintendo", "release_year": 2001, "units_sold_millions": 21.74, "generation": "6ta Gen", "wiki_image": "GameCube-Console-Set.png"},
+  {"name": "Wii", "manufacturer": "Nintendo", "release_year": 2006, "units_sold_millions": 101.63, "generation": "7ma Gen", "wiki_image": "Wii-console.png"},
+  {"name": "Nintendo Switch", "manufacturer": "Nintendo", "release_year": 2017, "units_sold_millions": 141.32, "generation": "8va/9na Gen", "wiki_image": "Nintendo-Switch-wJoyCons-BlRd-Standing-FL.png"},
+  {"name": "PlayStation", "manufacturer": "Sony", "release_year": 1994, "units_sold_millions": 102.49, "generation": "5ta Gen", "wiki_image": "PSX-Console-wController.png"},
+  {"name": "PlayStation 2", "manufacturer": "Sony", "release_year": 2000, "units_sold_millions": 155.00, "generation": "6ta Gen", "wiki_image": "Sony-PlayStation-2-40001-Console-FL.png"},
+  {"name": "PlayStation 3", "manufacturer": "Sony", "release_year": 2006, "units_sold_millions": 87.40, "generation": "7ma Gen", "wiki_image": "Sony-PlayStation-3-CECHA01-wController-L.png"},
+  {"name": "PlayStation 4", "manufacturer": "Sony", "release_year": 2013, "units_sold_millions": 117.20, "generation": "8va Gen", "wiki_image": "Sony-PlayStation-4-wController.png"},
+  {"name": "PlayStation 5", "manufacturer": "Sony", "release_year": 2020, "units_sold_millions": 59.30, "generation": "9na Gen", "wiki_image": "PlayStation_5_and_DualSense_with_transparent_background.png"},
+  {"name": "Xbox", "manufacturer": "Microsoft", "release_year": 2001, "units_sold_millions": 24.00, "generation": "6ta Gen", "wiki_image": "Xbox-Console-wDuke-L.png"},
+  {"name": "Xbox 360", "manufacturer": "Microsoft", "release_year": 2005, "units_sold_millions": 84.00, "generation": "7ma Gen", "wiki_image": "Xbox-360-Pro-wController-L.png"},
+  {"name": "Xbox One", "manufacturer": "Microsoft", "release_year": 2013, "units_sold_millions": 58.00, "generation": "8va Gen", "wiki_image": "Xbox-One-Console-wController-L.png"},
+  {"name": "Xbox Series X/S", "manufacturer": "Microsoft", "release_year": 2020, "units_sold_millions": 28.30, "generation": "9na Gen", "wiki_image": "Xbox_Series_X_and_Series_S.png"},
+  {"name": "Sega Genesis (Mega Drive)", "manufacturer": "Sega", "release_year": 1988, "units_sold_millions": 30.75, "generation": "4ta Gen", "wiki_image": "Sega-Genesis-Mk2-6button.png"}
+]

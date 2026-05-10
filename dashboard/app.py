@@ -16,6 +16,7 @@ import config
 from view_map import render_map_module
 from view_market import render_market_module
 from view_corporate import render_corporate_module
+from view_platforms import render_platforms_module
 
 
 # Page Configuration
@@ -36,7 +37,25 @@ def load_geo_data():
   """
 
   conn = sqlite3.connect(config.DATABASE_PATH)
-  df = pd.read_sql_query("SELECT * FROM studio_locations", conn)
+  query = """
+    SELECT 
+        sl."Geo_ID",
+        sl."Studio Name",
+        sl.City,
+        sl.Country,
+        sl.Lat,
+        sl.Lon,
+        sl.Region,
+        d.Parent,
+        d.Acquisition_Year,
+        d.Top_Game,
+        d.Metacritic,
+        d.Logo_URL
+    FROM studio_locations sl
+    LEFT JOIN dim_studios_corporate d ON sl."Studio Name" = d."Studio Name"
+    WHERE sl.Lat IS NOT NULL
+  """
+  df = pd.read_sql_query(query, conn)
   conn.close()
   return df
 
@@ -99,7 +118,7 @@ df_studios = load_geo_data()
 st.title("🎮 Análisis de la Industria del Videojuego")
 menu = st.sidebar.radio(
     "Selecciona una dimensión:",
-    ["Mapa de estudios", "Análisis de mercado", "Estructura corporativa"]
+    ["Mapa de estudios", "Evolución de plataformas", "Análisis de mercado", "Estructura corporativa"]
 )
 
 st.sidebar.divider()
@@ -126,6 +145,10 @@ if menu == "Mapa de estudios":
     st.divider()
     with st.expander("📊 Ver directorio completo en formato tabla"):
         st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+
+# --- Módulo Nuevo: Evolución de Plataformas ---
+elif menu == "Evolución de plataformas":
+    render_platforms_module()
 
 # --- Módulo 2: Dimensión de Mercado (Análisis Financiero) ---
 elif menu == "Análisis de mercado":

@@ -21,33 +21,9 @@ def _clean_corporate_df(df):
 
 def _get_base_query(where_clause=""):
     return f"""
-        SELECT 
-            c.name as Parent,
-            s.name as "Studio Name",
-            CASE 
-                WHEN sl.City IS NOT NULL AND sl.City != 'Unknown City' THEN sl.City
-                WHEN s.city IS NOT NULL AND s.city != '' AND s.city != 'N/A' THEN s.city
-                ELSE 'N/A'
-            END as City,
-            CASE 
-                WHEN sl.Country IS NOT NULL AND sl.Country != 'Unknown Country' THEN sl.Country
-                WHEN s.country IS NOT NULL AND s.country != '' AND s.country != 'N/A' THEN s.country
-                ELSE 'N/A'
-            END as Country,
-            s.acquisition_year as Acquisition_Year,
-            COALESCE(g.name, 'No registrado') as Top_Game,
-            COALESCE(g.genres, 'Desconocido') as Genres,
-            g.metacritic as Metacritic
-        FROM conglomerates c
-        JOIN notable_studios s ON c.id = s.parent_id
-        -- Cruce inteligente (Fuzzy Match) para ignorar sufijos como "(Nintendo)" o sucursales
-        LEFT JOIN studio_locations sl 
-            ON s.name = sl."Studio Name" 
-            OR s.name LIKE sl."Studio Name" || ' %'
-            OR sl."Studio Name" LIKE s.name || ' %'
-        LEFT JOIN games_metadata g ON s.id = g.studio_id
+        SELECT *
+        FROM dim_studios_corporate
         {where_clause}
-        GROUP BY c.name, s.name
     """
 
 @st.cache_data(show_spinner="Cargando estructura corporativa global...")
@@ -62,6 +38,6 @@ def get_all_corporate_data():
 def get_conglomerate_data(parent_name):
     """Consulta optimizada a la DB filtrando solo el conglomerado seleccionado."""
     conn = sqlite3.connect(config.DATABASE_PATH)
-    df = pd.read_sql_query(_get_base_query("WHERE c.name = ?"), conn, params=(parent_name,))
+    df = pd.read_sql_query(_get_base_query("WHERE Parent = ?"), conn, params=(parent_name,))
     conn.close()
     return _clean_corporate_df(df)

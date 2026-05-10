@@ -8,23 +8,18 @@ def create_interactive_map(df, center=[20, 0], zoom=2):
     Crea un mapa interactivo utilizando Folium para visualizar 
     la ubicación de los estudios de videojuegos de forma intereactiva.
     """
-    # 1. Inicializamos el mapa SIN una capa base por defecto (tiles=None)
-    m = folium.Map(location=center, zoom_start=zoom, tiles=None)
+    # 1. Inicializamos el mapa con la capa base por defecto
+    m = folium.Map(location=center, zoom_start=zoom, tiles='cartodbdark_matter')
 
-    # 2. Añadimos nuestras propias capas base
-    # Tema Oscuro (Por defecto)
-    folium.TileLayer('cartodbdark_matter', name='Tema Oscuro').add_to(m)
-    
+    # 2. Añadimos alternativas de capas base
     # Tema Claro
     folium.TileLayer('cartodbpositron', name='Tema Claro').add_to(m)
     
-    # Vista Satélite (usando la API pública de Esri)
+    # Vista Satélite
     folium.TileLayer(
         tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
         attr='Esri',
-        name='Satélite',
-        overlay=False,
-        control=True
+        name='Satélite'
     ).add_to(m)
 
 
@@ -89,20 +84,50 @@ def create_interactive_map(df, center=[20, 0], zoom=2):
                 safe_query = urllib.parse.quote_plus(search_query)
                 maps_url = f"https://www.google.com/maps/search/?api=1&query={safe_query}"
 
-                # Construimos el HTML del popup con un enlace a Google Maps
+                # Lógica para mostrar datos de IGDB solo si existen (es un estudio notable)
+                has_igdb = pd.notna(row.get("Parent"))
+                
+                logo_img = f'<img src="{row["Logo_URL"]}" alt="Logo" style="max-height: 40px; margin-bottom: 5px; display: block; margin-left: auto; margin-right: auto;">' if has_igdb and pd.notna(row.get("Logo_URL")) else ""
+                
+                acquisition = row.get("Acquisition_Year")
+                acq_str = f"<b>Fundación / Adquisición:</b> {acquisition}<br>" if pd.notna(acquisition) and acquisition != 'No registrado' else ""
+                
+                igdb_section = ""
+                if has_igdb:
+                    top_game = row.get("Top_Game", "No registrado")
+                    metacritic = row.get("Metacritic", "N/A")
+                    
+                    if pd.notna(metacritic) and metacritic != 'N/A':
+                        try:
+                            meta_val = float(metacritic)
+                            meta_color = "green" if meta_val >= 75 else ("orange" if meta_val >= 50 else "red")
+                            metacritic_html = f'<span style="background-color: {meta_color}; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">{meta_val:g}</span>'
+                        except ValueError:
+                            metacritic_html = f'<span style="background-color: gray; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">{metacritic}</span>'
+                    else:
+                        metacritic_html = '<span style="color: #888;">N/A</span>'
+                        
+                    igdb_section = f"""
+                    <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
+                    <p style="margin: 4px 0; font-size: 13px; color: #333;"><b>🎮 Top Game:</b> {top_game}</p>
+                    <p style="margin: 4px 0; font-size: 13px; color: #333;"><b>⭐ Metacritic:</b> {metacritic_html}</p>
+                    """
+
+                # Construimos el HTML del popup
                 popup_html = f"""
-                <div style="font-family: Arial; min-width: 200px;">
-                    <h4 style="margin-bottom: 5px; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 3px;">
+                <div style="font-family: Arial; min-width: 220px; text-align: center;">
+                    {logo_img}
+                    <h4 style="margin: 0px 0 5px 0; color: #333; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
                         {row['Studio Name']}
                     </h4>
-                    <p style="margin: 3px 0; color: #555;"><b>🌍 Región:</b> {region}</p>
-                    <p style="margin: 3px 0; color: #555;"><b>📍 Ubicación:</b> {row['City']}, {row['Country']}</p>
+                    <p style="margin: 4px 0; font-size: 13px; color: #555;">{acq_str}<b>📍</b> {row['City']}, {row['Country']}</p>
+                    {igdb_section}
                     
-                    <div style="margin-top: 12px; text-align: center;">
+                    <div style="margin-top: 12px;">
                         <a href="{maps_url}" target="_blank" 
                            style="background-color: {pin_color}; color: white; padding: 6px 12px; 
-                                  text-decoration: none; border-radius: 4px; font-size: 13px; 
-                                  display: inline-block; width: 80%; font-weight: bold;">
+                                  text-decoration: none; border-radius: 4px; font-size: 12px; 
+                                  display: inline-block; width: 100%; box-sizing: border-box; font-weight: bold;">
                            📍 Ver en Google Maps
                         </a>
                     </div>

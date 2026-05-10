@@ -20,7 +20,8 @@ SHORT_NAMES = {
 def get_base64_image(empresa_name):
     """Lee el logo local y lo convierte a base64 para inyectarlo en HTML."""
     safe_name = "".join([c if c.isalnum() or c in " &()_-" else "_" for c in empresa_name])
-    img_path = config.LOGOS_DIR / f"{safe_name}.png"
+    logos_dir = getattr(config, 'LOGOS_DIR', Path(__file__).resolve().parent / "assets" / "logos")
+    img_path = logos_dir / f"{safe_name}.png"
     
     if img_path.exists():
         with open(img_path, "rb") as img_file:
