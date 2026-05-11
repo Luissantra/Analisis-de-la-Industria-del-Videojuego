@@ -59,25 +59,14 @@ def load_geo_data():
         sl.Lat,
         sl.Lon,
         sl.Region,
+        sl.studio_tier,
+        sl.is_notable,
         d.Parent,
         d.Acquisition_Year,
         d.Top_Game,
         d.Metacritic,
         d.Logo_URL,
-        CASE 
-            WHEN d.Parent IN (
-                'Sony Interactive Entertainment (PlayStation Studios)', 
-                'Microsoft Gaming (Xbox, ZeniMax, Activision Blizzard)', 
-                'Nintendo', 
-                'Electronic Arts (EA)', 
-                'Take-Two Interactive', 
-                'Ubisoft', 
-                'Tencent', 
-                'Sega Sammy'
-            ) THEN 'Estudio AAA (Conglomerado Mayor)'
-            WHEN d.Parent IS NOT NULL THEN 'Estudio AA / Destacado'
-            ELSE 'Estudio Independiente / Otro'
-        END as Category
+        d.Genres
     FROM studio_locations sl
     LEFT JOIN dim_studios_corporate d ON LOWER(sl."Studio Name") = LOWER(d."Studio Name")
   """
@@ -155,12 +144,22 @@ if menu == "Mapa de estudios":
     selected_country = st.sidebar.selectbox("Selecciona un país:", country_list)
     search_query = st.sidebar.text_input("Buscar por nombre de estudio:")
 
+    st.sidebar.header("Filtros de Clasificación")
+    only_notables = st.sidebar.toggle("Solo estudios notables", value=False)
+    
+    tier_options = ["AAA", "AA", "Indie"]
+    selected_tiers = st.sidebar.multiselect("Nivel del estudio (Tier):", options=tier_options, default=tier_options)
+
     # Aplicamos filtros
     filtered_df = df_studios.copy()
     if selected_country != "Todos":
         filtered_df = filtered_df[filtered_df['Country'] == selected_country]
     if search_query:
         filtered_df = filtered_df[filtered_df['Studio Name'].str.contains(search_query, case=False, na=False)]
+    if only_notables:
+        filtered_df = filtered_df[filtered_df['is_notable'] == 1]
+    if selected_tiers:
+        filtered_df = filtered_df[filtered_df['studio_tier'].isin(selected_tiers)]
 
     # Renderizamos el mapa
     render_map_module(filtered_df)
@@ -168,7 +167,13 @@ if menu == "Mapa de estudios":
     # Colocamos la tabla justo debajo del mapa 
     st.divider()
     with st.expander("📊 Ver directorio completo en formato tabla"):
-        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+        # Adaptative columns
+        if only_notables:
+            display_cols = ["Studio Name", "City", "Country", "studio_tier", "Parent", "Top_Game", "Metacritic", "Genres"]
+        else:
+            display_cols = ["Studio Name", "City", "Country", "Region", "studio_tier"]
+            
+        st.dataframe(filtered_df[display_cols], use_container_width=True, hide_index=True)
 
 # --- Módulo Nuevo: Evolución de Plataformas ---
 elif menu == "Evolución de plataformas":

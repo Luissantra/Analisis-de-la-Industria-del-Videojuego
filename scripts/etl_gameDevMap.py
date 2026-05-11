@@ -96,6 +96,8 @@ def run_geo_etl():
     df_geo["City"] = df_geo["City"].fillna("Unknown City").str.title()
     df_geo["Country"] = df_geo["Country"].fillna("Unknown Country").str.upper()
     df_geo["Region"] = df_geo["Country"].apply(obtain_region)
+    df_geo["studio_tier"] = "Indie"
+    df_geo["is_notable"] = 0
 
     df_geo = df_geo.reset_index(drop=True)
     df_geo.index.name = "Geo_ID"

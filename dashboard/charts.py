@@ -1,6 +1,6 @@
 import folium
 import pandas as pd
-from folium.plugins import MarkerCluster
+from folium.plugins import MarkerCluster, FastMarkerCluster
 import urllib.parse
 import base64
 from pathlib import Path
@@ -101,32 +101,29 @@ def create_interactive_map(df, center=[20, 0], zoom=2):
         }}
         """
 
-        # Inicializamos el cluster
+        # Inicializamos el cluster para esta región
         region_cluster = MarkerCluster(icon_create_function=custom_js).add_to(region_layer)
-
+        
         # Filtramos el DataFrame por región
-        region_df = df[df['Region'] == region]
-        valid_locations = region_df.dropna(subset=['Lat', 'Lon'])
+        region_df = df[df['Region'] == region].dropna(subset=['Lat', 'Lon'])
+        
+        for idx, row in region_df.iterrows():
+            # Limpiamos y preparamos el texto para la URL
+            search_query = f"{row['Studio Name']} {row['City']} {row['Country']}"
+            safe_query = urllib.parse.quote_plus(search_query)
+            maps_url = f"https://www.google.com/maps/search/?api=1&query={safe_query}"
 
-        # Añadimos las estudios de la región al cluster
-        for idx, row in valid_locations.iterrows():
-            if pd.notna(row['Lat']) and pd.notna(row['Lon']):
-                
-                # Limpiamos y preparamos el texto para la URL
-                search_query = f"{row['Studio Name']} {row['City']} {row['Country']}"
-                safe_query = urllib.parse.quote_plus(search_query)
-                maps_url = f"https://www.google.com/maps/search/?api=1&query={safe_query}"
-
-                # Extracción segura de metadatos (evitando "None")
+            city = row['City'] if pd.notna(row.get('City')) else 'Desconocida'
+            country = row['Country'] if pd.notna(row.get('Country')) else 'Desconocido'
+            tier = row['studio_tier'] if pd.notna(row.get('studio_tier')) else 'Indie'
+            
+            if row.get('is_notable', 0) == 1:
+                # Pop-up rico para estudios notables
                 parent = row['Parent'] if pd.notna(row.get('Parent')) else 'Independiente'
-                top_game = row['Top_Game'] if pd.notna(row.get('Top_Game')) else 'Información no disponible'
+                top_game = row['Top_Game'] if pd.notna(row.get('Top_Game')) else 'N/A'
                 score = row['Metacritic'] if pd.notna(row.get('Metacritic')) else 'N/A'
                 logo_url = row['Logo_URL'] if pd.notna(row.get('Logo_URL')) else None
-                city = row['City'] if pd.notna(row.get('City')) else 'Desconocida'
-                country = row['Country'] if pd.notna(row.get('Country')) else 'Desconocido'
-                category = row['Category'] if pd.notna(row.get('Category')) else 'Estudio Independiente / Otro'
                 
-                # Determinamos el color del badge de Metacritic
                 try:
                     score_val = float(score)
                     score_color = "#28a745" if score_val >= 75 else "#ffc107" if score_val >= 50 else "#dc3545"
@@ -134,17 +131,21 @@ def create_interactive_map(df, center=[20, 0], zoom=2):
                     score_color = "#6c757d"
                     score = "N/A"
 
-                # Construimos el HTML del popup con un enlace a Google Maps
                 popup_html = f"""
                 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-width: 220px; color: #333;">
                     <div style="text-align: center; margin-bottom: 8px;">
                         {f'<img src="{logo_url}" style="max-height: 40px; margin-bottom: 5px; border-radius: 4px;">' if logo_url and str(logo_url) != 'No registrado' else ''}
                         <h4 style="margin: 2px 0; color: #111; border-bottom: 1px solid #ddd; padding-bottom: 5px;">{row['Studio Name']}</h4>
+                        <span style="display: inline-block; padding: 2px 6px; background: #eee; border-radius: 3px; font-size: 11px; font-weight: bold; margin-top: 4px;">Tier: {tier}</span>
                     </div>
                     
                     <div style="font-size: 13px;">
                         <p style="margin: 3px 0;"><b>🌍 Región:</b> {region}</p>
                         <p style="margin: 3px 0;"><b>📍 Ciudad:</b> {city}, {country}</p>
+                        <hr style="margin: 8px 0; border: 0; border-top: 1px solid #eee;">
+                        <p style="margin: 3px 0;"><b>🏢 Parent:</b> {parent}</p>
+                        <p style="margin: 3px 0;"><b>🎮 Top Game:</b> {top_game}</p>
+                        <p style="margin: 3px 0;"><b>⭐ Metacritic:</b> <span style="color: {score_color}; font-weight: bold;">{score}</span></p>
                     </div>
                     
                     <div style="margin-top: 15px; text-align: center;">
@@ -161,6 +162,14 @@ def create_interactive_map(df, center=[20, 0], zoom=2):
                 folium.Marker(
                     location=[row['Lat'], row['Lon']],
                     popup=folium.Popup(popup_html, max_width=300),
+                    tooltip=row['Studio Name'],
+                    icon=folium.Icon(color=pin_color, icon='gamepad', prefix='fa')
+                ).add_to(region_cluster)
+                
+            else:
+                # Sin pop-up para estudios genéricos (solo tooltip al pasar el ratón) para optimizar carga
+                folium.Marker(
+                    location=[row['Lat'], row['Lon']],
                     tooltip=row['Studio Name'],
                     icon=folium.Icon(color=pin_color, icon='gamepad', prefix='fa')
                 ).add_to(region_cluster)

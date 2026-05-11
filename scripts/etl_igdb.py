@@ -58,7 +58,7 @@ class IGDBClient:
         body = f"""
             where name ~ *"{company_name}"*;
             fields name, description, start_date, url, 
-                   country, parent.name, logo.url, 
+                   country, company_size, parent.name, logo.url, 
                    developed.name, developed.rating, developed.first_release_date,
                    published.name;
             limit 5;
@@ -145,6 +145,7 @@ def process_studios_to_mdm():
                     'igdb_parent_name': best_match.get('parent', {}).get('name'),
                     'igdb_start_date': best_match.get('start_date'),
                     'igdb_country': best_match.get('country'),
+                    'igdb_company_size': best_match.get('company_size'),
                     'igdb_logo_url': logo_url,
                     'igdb_top_game': top_game_name,
                     'igdb_top_game_rating': top_game_rating,
@@ -161,6 +162,7 @@ def process_studios_to_mdm():
                     'igdb_parent_name': None,
                     'igdb_start_date': None,
                     'igdb_country': None,
+                    'igdb_company_size': None,
                     'igdb_logo_url': None,
                     'igdb_top_game': None,
                     'igdb_top_game_rating': None,

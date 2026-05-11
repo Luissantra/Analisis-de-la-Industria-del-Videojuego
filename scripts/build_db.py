@@ -62,6 +62,18 @@ def build_database():
                 sl.Lat, 
                 sl.Lon, 
                 sl.Region,
+                CASE
+                    WHEN m.igdb_company_size >= 6 THEN 'AAA'
+                    WHEN m.igdb_company_size >= 4 THEN 'AA'
+                    WHEN m.igdb_company_size IS NOT NULL AND m.igdb_company_size < 4 THEN 'Indie'
+                    WHEN c.name IN ('Sony Interactive Entertainment (PlayStation Studios)', 
+                                     'Microsoft Gaming (Xbox, ZeniMax, Activision Blizzard)', 
+                                     'Nintendo', 'Electronic Arts (EA)', 'Take-Two Interactive',
+                                     'Ubisoft', 'Tencent', 'Sega Sammy', 'Epic Games', 
+                                     'Warner Bros. Games', 'Krafton') THEN 'AAA'
+                    WHEN c.name = 'Independent & Other Publishers' THEN 'Indie'
+                    ELSE 'AA'
+                END AS studio_tier,
                 COALESCE(
                     CASE 
                         WHEN m.igdb_start_date > 0 AND m.igdb_start_date < 2147483647 
@@ -130,6 +142,34 @@ def build_database():
                 GROUP BY g.developer_rawg_id
             ) agg ON dr.rawg_developer_id = agg.developer_rawg_id;
         """))
+
+        # Propagate studio_tier and is_notable to studio_locations
+        try:
+            # Check if columns exist
+            res = connection.execute(text("PRAGMA table_info(studio_locations)"))
+            cols = [row[1] for row in res]
+            if 'studio_tier' not in cols:
+                connection.execute(text("ALTER TABLE studio_locations ADD COLUMN studio_tier TEXT DEFAULT 'Indie'"))
+            if 'is_notable' not in cols:
+                connection.execute(text("ALTER TABLE studio_locations ADD COLUMN is_notable INTEGER DEFAULT 0"))
+            
+            # Update values
+            connection.execute(text("""
+                UPDATE studio_locations
+                SET studio_tier = (
+                    SELECT dc.studio_tier FROM dim_studios_corporate dc
+                    WHERE LOWER(dc."Studio Name") = LOWER(studio_locations."Studio Name")
+                ),
+                is_notable = 1
+                WHERE EXISTS (
+                    SELECT 1 FROM dim_studios_corporate dc
+                    WHERE LOWER(dc."Studio Name") = LOWER(studio_locations."Studio Name")
+                )
+            """))
+            log.info("Columnas studio_tier e is_notable propagadas a studio_locations.")
+        except Exception as e:
+            log.warning(f"No se pudo propagar studio_tier a studio_locations (¿tabla no existe aún?): {e}")
+
 
         # Crear vista detallada de juegos para análisis profundo si se necesita en el futuro
         connection.execute(text("""

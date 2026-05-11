@@ -24,6 +24,7 @@ from scripts import (
     etl_games_rawg,
     etl_igdb,
     etl_platforms,
+    geocode_notables,
     get_gameDevMap,
     get_market_data,
 )
@@ -90,9 +91,11 @@ def run_pipeline(
         try:
             log.info("3.1 Transformando datos geográficos...")
             etl_gameDevMap.run_geo_etl()
-            
             log.info("3.2 Procesando plataforma y consolas...")
             etl_platforms.run_platforms_etl()
+            
+            log.info("3.3 Geocodificando estudios notables faltantes...")
+            geocode_notables.run_geocode_notables()
         except Exception as e:
             log.error("Error en la fase de TRANSFORMACIÓN: %s", e)
             sys.exit(1)
