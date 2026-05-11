@@ -14,7 +14,7 @@ TICKERS_JSON = BASE_DIR / "config_data" / "tickers.json"
 PLATFORMS_JSON = BASE_DIR / "config_data" / "platforms.json"
 MARKET_VISUALS_JSON = BASE_DIR / "config_data" / "market_visuals.json"
 
-RAW_GAMEDEVMAP_CSV = RAW_DATA_DIR / "raw_studios_geocoded.csv"
+RAW_GAMEDEVMAP_CSV = RAW_DATA_DIR / "raw_studios.csv"
 GAMEDEVMAP_CSV = PROCESSED_DATA_DIR / "studios_geocoded.csv"
 
 RAW_MARKETDATA_CSV = RAW_DATA_DIR / "raw_market_data.csv"

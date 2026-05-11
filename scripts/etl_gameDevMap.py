@@ -1,6 +1,7 @@
 import pandas as pd
 import pycountry_convert as pc
 import sys
+import sqlite3
 from pathlib import Path
 
 # Agregamos el directorio raíz al path para que Python encuentre el módulo 'config'
@@ -25,8 +26,11 @@ def obtain_region(country_name):
         'WALES': 'United Kingdom',
         'NORTHERN IRELAND': 'United Kingdom',
         'SOUTH KOREA': 'South Korea',
+        'KOREA, REPUBLIC OF': 'South Korea',
+        'RUSSIAN FEDERATION': 'Russian Federation',
         'RUSSIA': 'Russian Federation',
-        'CZECHIA': 'Czech Republic'
+        'CZECHIA': 'Czech Republic',
+        'TAIWAN, PROVINCE OF CHINA': 'Taiwan'
     }
     
     nombre_limpio = correcciones.get(country_name.upper(), country_name.title())
@@ -79,8 +83,8 @@ def run_geo_etl():
     # Mapeamos cada país a su región usando la función auxiliar
     df_geo['Region'] = df_geo['Country'].apply(obtain_region)
 
-    # Nos olvidamos de las que no tengan coordenadas
-    df_geo = df_geo.dropna(subset=['Lat', 'Lon'])
+    # Conservamos los estudios sin coordenadas para que no se pierdan del directorio
+    # El mapa de Folium ya está preparado para ignorar de forma segura los valores nulos
 
     # Reseteamos índice
     df_geo = df_geo.reset_index(drop=True)
@@ -89,12 +93,14 @@ def run_geo_etl():
     print(f"Transformación completa. Total de estudios geocodificados: {len(df_geo)}")
 
     # 3. Load
-    print("Guardando datos transformados...")
+    print("Guardando datos transformados directamente en SQLite...")
 
-    processed_path = config.GAMEDEVMAP_CSV
-    df_geo.to_csv(processed_path, index=True)
+    # Eliminamos el CSV intermedio e inyectamos directamente en la base de datos
+    conn = sqlite3.connect(config.DATABASE_PATH)
+    df_geo.to_sql('studio_locations', conn, if_exists='replace', index=False)
+    conn.close()
 
-    print(f"¡ETL completado! Archivo guardado como '{processed_path}'.")
+    print("¡ETL completado! Los datos han sido cargados en la tabla 'studio_locations'.")
 
 
 if __name__ == "__main__":

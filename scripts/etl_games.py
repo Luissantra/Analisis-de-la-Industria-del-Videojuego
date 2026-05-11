@@ -44,6 +44,17 @@ def run_games_etl(force=False):
     conn = sqlite3.connect(config.DATABASE_PATH)
     cursor = conn.cursor()
     
+    # Asegurarnos de que las nuevas columnas existan en la tabla (retrocompatibilidad)
+    try:
+        cursor.execute("ALTER TABLE games_metadata ADD COLUMN user_rating REAL")
+    except sqlite3.OperationalError:
+        pass # La columna ya existe
+        
+    try:
+        cursor.execute("ALTER TABLE games_metadata ADD COLUMN ratings_count INTEGER")
+    except sqlite3.OperationalError:
+        pass # La columna ya existe
+
     if force:
         cursor.execute("SELECT id, name FROM games_metadata")
         print("⚠️ Modo forzado: Se volverán a descargar los datos de todos los juegos.")
@@ -72,6 +83,8 @@ def run_games_etl(force=False):
         nombres_api = []
         all_genres = set()
         metacritics = []
+        user_ratings = []
+        ratings_counts = []
         fechas_lanzamiento = []
         
         for sub_name in juegos_separados:
@@ -89,6 +102,10 @@ def run_games_etl(force=False):
                             fechas_lanzamiento.append(result.get("released"))
                         if result.get("metacritic"):
                             metacritics.append(result.get("metacritic"))
+                        if result.get("rating"):
+                            user_ratings.append(result.get("rating"))
+                        if result.get("ratings_count"):
+                            ratings_counts.append(result.get("ratings_count"))
                             
                         genres_list = [g["name"] for g in result.get("genres", [])]
                         all_genres.update(genres_list)
@@ -106,20 +123,21 @@ def run_games_etl(force=False):
         final_name_api = " / ".join(nombres_api) if nombres_api else "No encontrado"
         final_released = max(fechas_lanzamiento) if fechas_lanzamiento else "" # Fecha más reciente
         final_meta = round(sum(metacritics) / len(metacritics)) if metacritics else None
+        final_user_rating = round(sum(user_ratings) / len(user_ratings), 2) if user_ratings else None
+        final_ratings_count = sum(ratings_counts) if ratings_counts else 0
         final_genres = ", ".join(sorted(all_genres)) if all_genres else "Desconocido"
 
         cursor.execute("""
             UPDATE games_metadata 
-            SET name_api = ?, released = ?, metacritic = ?, genres = ?
+            SET name_api = ?, released = ?, metacritic = ?, genres = ?, user_rating = ?, ratings_count = ?
             WHERE id = ?
-        """, (final_name_api, final_released, final_meta, final_genres, game_id))
+        """, (final_name_api, final_released, final_meta, final_genres, final_user_rating, final_ratings_count, game_id))
             
         conn.commit()
         nuevos_juegos += 1
 
     conn.close()
     print(f"\n✅ Proceso completado. Se actualizaron {nuevos_juegos} juegos en SQLite.")
-    print("Siguiente paso sugerido: Fase 3 (Refactorizar view_corporate.py para que lea de SQLite y eliminar JSONs).")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Extrae metadatos de juegos desde RAWG API a SQLite.")

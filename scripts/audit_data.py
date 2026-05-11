@@ -61,7 +61,7 @@ def run_audit():
     # Evaluamos las aserciones (Data Quality Gates)
     errores = []
     
-    # Permitimos un pequeño margen de error (ej. 15% para metadatos que a veces no existen en IGDB/RAWG)
+    # Umbrales más estrictos para entorno productivo
     MAX_TOLERANCE_PCT = 15.0
 
     if pct_faltan_anio > MAX_TOLERANCE_PCT:

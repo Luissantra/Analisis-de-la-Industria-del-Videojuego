@@ -153,6 +153,8 @@ def geocode_studios(input_csv, output_csv):
     df = pd.read_csv(input_csv, dtype=str)
     df['City'] = df['City'].fillna('')
     df['Country'] = df['Country'].fillna('')
+    # USAR SOLO CIUDAD Y PAÍS: OpenStreetMap no tiene mapeadas la mayoría de las empresas.
+    # Buscar por nombre de empresa hace que la API falle y devuelva nulo para miles de registros.
     df['query_address'] = df['City'] + ", " + df['Country']
 
     # Cargar cache desde SQLite
@@ -189,12 +191,8 @@ def geocode_studios(input_csv, output_csv):
     if output_exists:
         try:
             done_df = pd.read_csv(output_csv, dtype=str)
-            if 'query_address' in done_df.columns:
-                already_done = set(done_df['query_address'].dropna().tolist())
-            else:
-                # Si el CSV no tiene query_address, reconstruimos desde City+Country
-                done_df['query_address'] = done_df.get('City', '') + ", " + done_df.get('Country', '')
-                already_done = set(done_df['query_address'].dropna().tolist())
+            if 'Company_Name' in done_df.columns:
+                already_done = set(done_df['Company_Name'].dropna().tolist())
         except Exception:
             already_done = set()
 
@@ -202,14 +200,15 @@ def geocode_studios(input_csv, output_csv):
     ssl_ctx = ssl.create_default_context(cafile=certifi.where())
 
     # Inicializar el geocodificador con un User Agent único
-    geolocator = Nominatim(user_agent="gamedev_mapper_v1_2026", ssl_context=ssl_ctx)
+    geolocator = Nominatim(user_agent="gamedev_analysis_tool_luis_v2", ssl_context=ssl_ctx, timeout=15)
 
-    # Configuramos el limitador para cumplir con la política de 1 consulta/seg
+    # Configuramos el limitador para cumplir con la política de Nominatim (1 req/seg max)
     geocode = RateLimiter(
         geolocator.geocode,
-        min_delay_seconds=1.1,
+        min_delay_seconds=1.5, 
         return_value_on_exception=None,
-        max_retries=1,
+        max_retries=5, 
+        error_wait_seconds=10.0
     )
 
     def safe_geocode(query):
@@ -232,10 +231,11 @@ def geocode_studios(input_csv, output_csv):
 
         # Iteramos sobre todas las filas del DataFrame
         for idx, row in df.iterrows():
+            company = row.get('Company_Name')
             query = row.get('query_address')
             
             # 1. Si esta dirección ya se procesó y guardó en el CSV en una ejecución anterior, la saltamos.
-            if query in already_done:
+            if company in already_done:
                 continue
                 
             lat = row.get('Latitude')
@@ -264,7 +264,7 @@ def geocode_studios(input_csv, output_csv):
             row_dict['Longitude'] = lon
             writer.writerow(row_dict)
             
-            already_done.add(query) # Lo marcamos como hecho para esta sesión
+            already_done.add(company) # Lo marcamos como hecho para esta sesión
 
     conn.close()
 
@@ -341,7 +341,7 @@ def obtener_datos_gamedevmap(
     raw_data = pd.concat([raw_data, df_notable], ignore_index=True)
     
     # Eliminamos duplicados dando prioridad a los notables (keep='last')
-    raw_data.drop_duplicates(subset=['Company_Name'], keep='last', inplace=True)
+    raw_data.drop_duplicates(subset=['Company_Name', 'City'], keep='last', inplace=True)
     
     raw_data.to_csv(output, index=False, encoding='utf-8')
     print(f"[INFO] Se han guardado {len(raw_data)} filas en: {output}")

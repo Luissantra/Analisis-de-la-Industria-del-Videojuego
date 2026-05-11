@@ -17,6 +17,7 @@ from view_map import render_map_module
 from view_market import render_market_module
 from view_corporate import render_corporate_module
 from view_platforms import render_platforms_module
+from view_community import render_community_module
 
 
 # Page Configuration
@@ -39,7 +40,6 @@ def load_geo_data():
   conn = sqlite3.connect(config.DATABASE_PATH)
   query = """
     SELECT 
-        sl."Geo_ID",
         sl."Studio Name",
         sl.City,
         sl.Country,
@@ -53,7 +53,6 @@ def load_geo_data():
         d.Logo_URL
     FROM studio_locations sl
     LEFT JOIN dim_studios_corporate d ON sl."Studio Name" = d."Studio Name"
-    WHERE sl.Lat IS NOT NULL
   """
   df = pd.read_sql_query(query, conn)
   conn.close()
@@ -118,7 +117,7 @@ df_studios = load_geo_data()
 st.title("🎮 Análisis de la Industria del Videojuego")
 menu = st.sidebar.radio(
     "Selecciona una dimensión:",
-    ["Mapa de estudios", "Evolución de plataformas", "Análisis de mercado", "Estructura corporativa"]
+    ["Mapa de estudios", "Evolución de plataformas", "Análisis de mercado", "Estructura corporativa", "Comunidad y Recepción"]
 )
 
 st.sidebar.divider()
@@ -179,3 +178,7 @@ elif menu == "Análisis de mercado":
 # --- Módulo 3: Dimensión Corporativa ---
 elif menu == "Estructura corporativa":
     render_corporate_module()
+
+# --- Módulo 4: Comunidad y Recepción ---
+elif menu == "Comunidad y Recepción":
+    render_community_module()

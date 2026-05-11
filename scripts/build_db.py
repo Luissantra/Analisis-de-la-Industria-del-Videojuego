@@ -22,16 +22,9 @@ def build_database():
     print("Conexión con la base de datos establecida.")
 
     # --- Tabla GameDevMap (Estudios) ---
-    if os.path.exists(config.GAMEDEVMAP_CSV):
-        print(f" - Cargando datos desde {config.GAMEDEVMAP_CSV}...")
-        df_geo = pd.read_csv(config.GAMEDEVMAP_CSV)
-        
-        # Escribimos el DataFrame a la base de datos
-        df_geo.to_sql('studio_locations', con=engine, if_exists='replace', index=False)
-        print(" [OK] Tabla 'studio_locations' creada y datos insertados.")
-    else:
-        print(f" [Advertencia] No se encontró {config.GAMEDEVMAP_CSV}. Ejecuta el pipeline de ETL primero.")
-        
+    # NOTA: Ahora `studio_locations` se carga directamente a SQLite desde `etl_gameDevMap.py`.
+    print(" [OK] Tabla 'studio_locations' es gestionada directamente por el ETL.")
+
     # --- Tabla Master Data Management (Estudios IGDB) ---
     MDM_CSV = config.PROCESSED_DATA_DIR / "mdm" / "master_studios.csv"
     if os.path.exists(MDM_CSV):
@@ -73,20 +66,36 @@ def build_database():
                 END as Country,
                 sl.Lat as Lat,
                 sl.Lon as Lon,
-                sl.Region as Region,
-                COALESCE(SUBSTR(m.igdb_start_date, 1, 4), s.acquisition_year) as Acquisition_Year,
-                COALESCE(m.igdb_top_game, g.name, 'No registrado') as Top_Game,
-                COALESCE(g.genres, 'Desconocido') as Genres,
-                COALESCE(m.igdb_top_game_rating, g.metacritic) as Metacritic,
-                m.igdb_logo_url as Logo_URL,
-                m.igdb_description as Description
+                sl.Region,
+                COALESCE(
+                    strftime('%Y', datetime(m.igdb_start_date, 'unixepoch')), 
+                    s.acquisition_year, 
+                    'No registrado') AS Acquisition_Year,
+                COALESCE(m.igdb_top_game, 'No registrado') AS Top_Game,
+                COALESCE(SUBSTR(gm.released, 1, 4), 'N/A') AS Game_Year,
+                COALESCE(gm.genres, 'Desconocido') AS Genres,
+                COALESCE(gm.metacritic, m.igdb_top_game_rating, 'N/A') AS Metacritic,
+                COALESCE(gm.user_rating, 0) AS User_Rating,
+                COALESCE(gm.ratings_count, 0) AS Ratings_Count,
+                (COALESCE(gm.user_rating, 0) * 20) AS User_Score_100,
+                CASE WHEN COALESCE(gm.metacritic, m.igdb_top_game_rating) IS NOT NULL AND gm.user_rating IS NOT NULL 
+                     THEN COALESCE(gm.metacritic, m.igdb_top_game_rating) - (gm.user_rating * 20) 
+                     ELSE NULL END as Review_Bombing_Index,
+                COALESCE(m.igdb_logo_url, '') as Logo_URL,
+                COALESCE(m.igdb_description, 'Sin descripción') as Description
             FROM conglomerates c
             JOIN notable_studios s ON c.id = s.parent_id
             LEFT JOIN master_studios m ON s.id = m.internal_id
             LEFT JOIN studio_locations sl ON s.name = sl."Studio Name"
-            LEFT JOIN games_metadata g ON s.id = g.studio_id
+            LEFT JOIN games_metadata gm ON s.id = gm.id
             GROUP BY c.name, s.name;
         """))
+        
+        # Creación de índices para optimizar las consultas en Streamlit
+        connection.execute(text('CREATE INDEX idx_dim_parent ON dim_studios_corporate(Parent);'))
+        connection.execute(text('CREATE INDEX idx_dim_country ON dim_studios_corporate(Country);'))
+        connection.execute(text('CREATE INDEX idx_stock_company ON stock_prices("Company Name");'))
+        connection.execute(text('CREATE INDEX idx_stock_date ON stock_prices(Date);'))
     print(" [OK] Capa semántica consolidada.")
 
 if __name__ == "__main__":

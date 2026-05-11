@@ -1,26 +1,25 @@
 # Análisis de la Industria del Videojuego - Dashboard
 
-Este proyecto es una plataforma de análisis de datos e inteligencia de negocios enfocada en la evolución histórica y comercial de la industria del videojuego. Utiliza herramientas de visualización avanzadas para explorar el ciclo de vida de las plataformas, ventas globales y el tamaño de los catálogos de juegos.
+Esta plataforma de Business Intelligence permite explorar la evolución histórica y comercial de la industria de los videojuegos. El sistema procesa datos de ventas y catálogos para ofrecer visualizaciones interactivas sobre el ciclo de vida de las consolas y el rendimiento de los fabricantes.
 
 ## 🚀 Características
 
 - **Roadmap de Plataformas:** Visualización interactiva tipo línea de tiempo que organiza las consolas por fabricante.
 - **Identidad Visual Consistente:** Sistema de colores predefinido para los principales actores de la industria (Sony, Nintendo, Microsoft, Sega, etc.).
 - **Métricas Dinámicas:** Representación visual del éxito de mercado mediante el tamaño de burbujas, integrando ventas en millones y conteo de títulos disponibles.
-- **Interfaz Profesional:** Gráficos optimizados con temas oscuros (`plotly_dark`) y tooltips detallados.
+- **Interfaz Profesional:** Gráficos optimizados con temas oscuros (`plotly_dark`), ejes limpios y tooltips informativos.
 
 ## 🛠️ Tecnologías Utilizadas
 
-- **Python 3.x**
-- **Pandas:** Procesamiento y limpieza de datos.
-- **Plotly Express:** Generación de gráficos interactivos.
-- **Dashboard Framework:** (Estructura preparada para integración con Streamlit o Dash).
+*   **Python 3.12+**
+*   **Pandas:** Manipulación y limpieza de estructuras de datos.
+*   **Plotly Express:** Creación de gráficos dinámicos y responsivos.
 
 ## 📂 Estructura del Proyecto
 
 ```text
 ├── dashboard/
-│   ├── charts_platforms.py   # Lógica de visualización de plataformas
+│   ├── charts_platforms.py   # Generación de Roadmap y visualizaciones de hardware
 │   └── config.py             # Configuraciones globales
 ├── data/                     # Datasets de la industria (Ventas, fechas, fabricantes)
 └── README.md
