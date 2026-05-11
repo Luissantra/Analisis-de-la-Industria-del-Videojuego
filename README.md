@@ -1,38 +1,61 @@
-# Análisis de la Industria del Videojuego - Dashboard
+# Industria del Videojuego: Análisis de Datos (v3)
 
-Esta plataforma de Business Intelligence permite explorar la evolución histórica y comercial de la industria de los videojuegos. El sistema procesa datos de ventas y catálogos para ofrecer visualizaciones interactivas sobre el ciclo de vida de las consolas y el rendimiento de los fabricantes.
+Este proyecto es un pipeline de datos end-to-end y un dashboard interactivo que analiza la industria global de los videojuegos. Ha sido refactorizado para utilizar esquemas relacionales consolidados (pasando de un prototipo de resumen a una arquitectura de granularidad por juego).
 
-## 🚀 Características
+## Características Principales
 
-- **Roadmap de Plataformas:** Visualización interactiva tipo línea de tiempo que organiza las consolas por fabricante.
-- **Identidad Visual Consistente:** Sistema de colores predefinido para los principales actores de la industria (Sony, Nintendo, Microsoft, Sega, etc.).
-- **Métricas Dinámicas:** Representación visual del éxito de mercado mediante el tamaño de burbujas, integrando ventas en millones y conteo de títulos disponibles.
-- **Interfaz Profesional:** Gráficos optimizados con temas oscuros (`plotly_dark`), ejes limpios y tooltips informativos.
+1. **Catálogo Real de Juegos:** Extrae hasta ~15,000 juegos en detalle de la API de RAWG utilizando IDs de desarrolladores (metacritic, géneros, calificaciones comunitarias).
+2. **Mapa Geográfico:** +6,400 estudios geolocalizados a nivel mundial.
+3. **Capa Corporativa Consolidada:** Mapeo de Master Data Management (MDM) usando IGDB para reconstruir la jerarquía corporativa (Conglomerado -> Estudio).
+4. **Análisis de Discrepancias:** Cuantificación del fenómeno de *Review Bombing* cruzando puntajes de crítica experta vs. votos de usuarios.
+5. **Dashboard Interactivo:** UI diseñada en Streamlit con visualizaciones avanzadas en Plotly (Sunburst, Treemaps, Mapas base folium).
 
-## 🛠️ Tecnologías Utilizadas
+## Diagrama de la Base de Datos
 
-*   **Python 3.12+**
-*   **Pandas:** Manipulación y limpieza de estructuras de datos.
-*   **Plotly Express:** Creación de gráficos dinámicos y responsivos.
+La base de datos SQLite generada (`videogames.db`) sigue un esquema de copo de nieve:
 
-## 📂 Estructura del Proyecto
+- `conglomerates`: Principales publishers de la industria (Ej: Microsoft Gaming).
+- `notable_studios`: Estudios vinculados a un conglomerado.
+- `developers_rawg`: Puente de mapeo (ID local -> API externa).
+- `games`: Catálogo granular de títulos por desarrollador.
+- `studio_locations`: Coordenadas geográficas globales.
+- `stock_prices`: Datos bursátiles históricos.
+- `platforms`: Metadatos sobre consolas y ciclos de vida.
+- **`dim_studios_corporate`**: Vista materializada para el Dashboard que pre-calcula métricas de juegos y geografía por estudio.
 
-```text
-├── dashboard/
-│   ├── charts_platforms.py   # Generación de Roadmap y visualizaciones de hardware
-│   └── config.py             # Configuraciones globales
-├── data/                     # Datasets de la industria (Ventas, fechas, fabricantes)
-└── README.md
+## Requisitos y Configuración
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## 📊 Visualizaciones Principales
+Crea un archivo `.env` en la raíz con las siguientes variables (obtenidas del portal de desarrolladores de IGDB y RAWG):
 
-### Roadmap Timeline
-El módulo `charts_platforms.py` genera una línea de tiempo donde el eje Y segmenta a los fabricantes y el eje X representa el año de lanzamiento. El tamaño de cada punto se calcula dinámicamente:
-1. Si existen datos de ventas, se utiliza `units_sold_millions`.
-2. Si no hay ventas registradas, se normaliza según el `games_count` (cantidad de juegos).
+```env
+IGDB_CLIENT_ID=tu_client_id
+IGDB_CLIENT_SECRET=tu_client_secret
+RAWG_API_KEY=tu_api_key
+```
 
-## 📝 Requisitos
+## Ejecución del Pipeline
 
-Instala las dependencias necesarias con:
-`pip install pandas plotly`
+Para generar la base de datos desde cero:
+
+```bash
+python main.py
+```
+
+Flags disponibles para desarrollo rápido:
+- `--skip-extract`: Salta el scraping base (usa lo que esté en `/data/raw/`).
+- `--skip-games`: Evita llamar a RAWG (ideal para pruebas rápidas).
+- `--force-games`: Obliga a re-descargar todos los juegos mapeados.
+
+## Lanzar el Dashboard
+
+Una vez construida la base de datos, ejecuta:
+
+```bash
+streamlit run dashboard/app.py
+```

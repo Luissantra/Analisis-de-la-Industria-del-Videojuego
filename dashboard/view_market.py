@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from charts_market import create_comparison_line_chart, create_candlestick_chart
+from model_corporate import get_dynamic_market_events
 
 
 def prepare_time_filtered_data(df, timeframe):
@@ -8,6 +9,14 @@ def prepare_time_filtered_data(df, timeframe):
     Filtra por tiempo, ajusta la granularidad dinámicamente (OHLCV) y recalcula rendimiento.
     """
     df_filtered = df.copy()
+    
+    # Limpieza de duplicados avanzada:
+    # Priorizamos registros donde Daily_Return_% NO sea cero si hay duplicados para la misma fecha.
+    df_filtered['is_zero'] = (df_filtered['Daily_Return_%'] == 0).astype(int)
+    df_filtered = df_filtered.sort_values(by=['Date', 'is_zero'])
+    df_filtered = df_filtered.drop_duplicates(subset=['Company Name', 'Date'], keep='first')
+    df_filtered = df_filtered.drop(columns=['is_zero'])
+    
     max_date = df_filtered['Date'].max()
     
     # 1. Filtro Temporal y Frecuencia de Agrupación
@@ -108,18 +117,20 @@ def render_market_module(df_market, selected_companies, benchmark="Ninguno"):
     st.divider()
 
     # 4. Mostrar Gráficos
+    dynamic_events = get_dynamic_market_events()
+    
     if "Comparativa" in vista:
-        fig_line = create_comparison_line_chart(df_processed, timeframe, benchmark)
+        fig_line = create_comparison_line_chart(df_processed, timeframe, benchmark, dynamic_events)
         st.plotly_chart(fig_line, use_container_width=True)
     else:
         if len(selected_companies) > 1:
             tabs = st.tabs(selected_companies)
             for i, company in enumerate(selected_companies):
                 with tabs[i]:
-                    fig_candle = create_candlestick_chart(df_processed, company, timeframe)
+                    fig_candle = create_candlestick_chart(df_processed, company, timeframe, dynamic_events)
                     st.plotly_chart(fig_candle, use_container_width=True)
         else:
-            fig_candle = create_candlestick_chart(df_processed, selected_companies[0], timeframe)
+            fig_candle = create_candlestick_chart(df_processed, selected_companies[0], timeframe, dynamic_events)
             st.plotly_chart(fig_candle, use_container_width=True)
 
     with st.expander("Ver tabla de datos puros del período"):

@@ -3,7 +3,7 @@ from streamlit_folium import st_folium
 from charts import create_interactive_map
 
 def render_map_module(filtered_df):
-    """"
+    """
     Renderiza el módulo del mapa interactivo con los datos filtrados.
     """
     st.subheader("Mapa de Ubicación de Estudios de Videojuegos")

@@ -22,6 +22,9 @@ PARENT_COLOR_MAP = {
     "Take-Two Interactive": BRAND_COLORS.get("Take-Two Interactive", "#000000"),
     "Ubisoft": BRAND_COLORS.get("Ubisoft Entertainment", "#0070FF"),
     "Sega Sammy": BRAND_COLORS.get("Sega Sammy", "#0060A8"),
+    "Krafton": "#1B2A40",
+    "Warner Bros. Games": "#002B5C",
+    "Epic Games": "#313131",
     "Independent & Other Publishers": "#444444" # Color gris genérico
 }
 
@@ -49,16 +52,6 @@ def create_sunburst_chart(df):
         template="plotly_dark"
     )
 
-    # Personalizar el Tooltip (Hover)
-    fig.update_traces(
-        hovertemplate=(
-            "<b>%{label}</b><br>"
-            "📍 Ubicación: %{customdata[0]}, %{customdata[1]}<br>"
-            "🎮 Juego Notable: %{customdata[2]}<br>"
-            "🗓️ Adquisición: %{customdata[3]}<extra></extra>"
-        )
-    )
-    
     fig.update_traces(
         # Añade un borde oscuro/claro delgado entre los segmentos para separarlos limpiamente
         marker=dict(line=dict(color='#0E1117', width=1.5)),
@@ -66,9 +59,9 @@ def create_sunburst_chart(df):
         textinfo="label+percent parent",
         hovertemplate=(
             "<b>%{label}</b><br>"
-            "📍 Ciudad: %{customdata[0]}<br>"
-            "🎮 Juego Notable: %{customdata[1]}<br>"
-            "🗓️ Adquisición: %{customdata[2]}<extra></extra>"
+            "📍 Ubicación: %{customdata[0]}, %{customdata[1]}<br>"
+            "🎮 Juego Notable: %{customdata[2]}<br>"
+            "🗓️ Adquisición: %{customdata[3]}<extra></extra>"
         )
     )
     
@@ -118,15 +111,14 @@ def create_treemap_chart(df):
     
     # Agrupar por Estudio para calcular cantidad de juegos y nota media
     df_grouped = df_clean.groupby(['Country', 'City', 'Studio Name', 'Acquisition_Year']).agg(
-        Game_Count=('Top_Game', 'count'),
+        Game_Count=('Total_Games', 'max') if 'Total_Games' in df_clean.columns else ('Top_Game', 'count'),
         Avg_Metacritic=('Metacritic_Num', 'mean'),
         Top_Games=('Top_Game', lambda x: '<br> • '.join([g for g in x.unique() if str(g) != 'No registrado'][:4]))
     ).reset_index()
     
-    # Rellenamos los que no tienen nota con una media neutra (ej: 50) para que puedan dibujarse
-    overall_mean = df_grouped['Avg_Metacritic'].mean()
-    fill_val = 50 if pd.isna(overall_mean) else overall_mean
-    df_grouped['Avg_Metacritic'] = df_grouped['Avg_Metacritic'].fillna(fill_val)
+    # No rellenamos con media neutra para que Plotly los deje grises transparentes/heredados naturalmente
+    # Añadimos una columna en texto para el tooltip
+    df_grouped['Avg_Metacritic_Str'] = df_grouped['Avg_Metacritic'].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "N/A")
     
     fig = px.treemap(
         df_grouped,
@@ -135,7 +127,7 @@ def create_treemap_chart(df):
         color='Avg_Metacritic',
         color_continuous_scale='RdYlGn',
         range_color=[40, 95], # Rango estándar para notas
-        hover_data=['City', 'Top_Games', 'Acquisition_Year', 'Avg_Metacritic'],
+        hover_data=['City', 'Top_Games', 'Acquisition_Year', 'Avg_Metacritic_Str'],
         template="plotly_dark"
     )
     
@@ -147,7 +139,7 @@ def create_treemap_chart(df):
             "📍 Sede: %{customdata[0]}, %{parent}<br>"
             "🎮 Juegos:<br> • %{customdata[1]}<br>"
             "🗓️ Adquisición: %{customdata[2]}<br>"
-            "⭐ Nota Media: %{customdata[3]:.1f}<extra></extra>"
+            "⭐ Nota Media: %{customdata[3]}<extra></extra>"
         )
     )
     
@@ -165,24 +157,27 @@ def create_genre_and_score_chart(df, color="#0070FF"):
     Crea una matriz de portfolio (Gráfico de Burbujas) cruzando el volumen 
     de juegos por género con su calidad promedio (Metacritic).
     """
-    if 'Genres' not in df.columns or df['Genres'].eq('Desconocido').all():
+    if 'genres' not in df.columns or df['genres'].eq('Desconocido').all() or df['genres'].eq('').all():
         return None
         
     # Explotar la columna de géneros (ya que un juego puede tener varios separados por coma)
     df_genres = df.copy()
-    df_genres = df_genres[df_genres['Genres'] != 'Desconocido']
-    df_genres['Genre_List'] = df_genres['Genres'].str.split(', ')
+    df_genres = df_genres[df_genres['genres'] != 'Desconocido']
+    df_genres = df_genres[df_genres['genres'] != '']
+    df_genres['Genre_List'] = df_genres['genres'].str.split(', ')
     df_exploded = df_genres.explode('Genre_List')
     
     if df_exploded.empty:
         return None
         
-    # Convertir a numérico y agrupar por género
-    df_exploded['Metacritic_Num'] = pd.to_numeric(df_exploded['Metacritic'], errors='coerce')
+    # Convertir a numérico, ordenar por nota para el tooltip y agrupar por género
+    df_exploded['Metacritic_Num'] = pd.to_numeric(df_exploded['metacritic'], errors='coerce')
+    df_exploded = df_exploded.sort_values('Metacritic_Num', ascending=False)
+    
     genre_stats = df_exploded.groupby('Genre_List').agg(
-        Count=('Studio Name', 'count'),
+        Count=('title', 'count'),
         Avg_Metacritic=('Metacritic_Num', 'mean'),
-        Top_Games=('Top_Game', lambda x: '<br> • '.join(x.unique()[:3])) # Guardar top 3 juegos del género
+        Top_Games=('title', lambda x: '<br> • '.join(x.unique()[:3])) # Guardar top 3 juegos del género
     ).reset_index()
     
     # Limpiar nulos para el gráfico 2D
@@ -368,4 +363,110 @@ def create_score_distribution_chart(df, color="#0070FF", is_global=False):
         xaxis=dict(showticklabels=False),
         showlegend=False
     )
+    return fig
+
+def create_esrb_distribution_chart(df):
+    """
+    Crea un gráfico de barras apiladas 100% mostrando la distribución de edades (ESRB)
+    por cada conglomerado (o género si es global).
+    """
+    if 'esrb_rating' not in df.columns or df.empty:
+        return None
+        
+    df_esrb = df.copy()
+    # Limpiar y filtrar
+    valid_ratings = ['Everyone', 'Everyone 10+', 'Teen', 'Mature', 'Adults Only']
+    df_esrb = df_esrb[df_esrb['esrb_rating'].isin(valid_ratings)]
+    
+    if df_esrb.empty:
+        return None
+        
+    # Agrupamos por Conglomerado (o Estudio si ya estamos filtrados)
+    group_col = 'conglomerate' if 'conglomerate' in df.columns and len(df['conglomerate'].unique()) > 1 else 'studio'
+    
+    counts = df_esrb.groupby([group_col, 'esrb_rating']).size().reset_index(name='count')
+    # Calcular porcentajes
+    totals = counts.groupby(group_col)['count'].transform('sum')
+    counts['percentage'] = (counts['count'] / totals) * 100
+    
+    # Orden deseado de ESRB (de menor a mayor madurez)
+    category_order = ['Everyone', 'Everyone 10+', 'Teen', 'Mature', 'Adults Only']
+    color_map = {
+        'Everyone': '#4CAF50',
+        'Everyone 10+': '#8BC34A',
+        'Teen': '#FFC107',
+        'Mature': '#FF5722',
+        'Adults Only': '#B71C1C'
+    }
+    
+    fig = px.bar(
+        counts, 
+        x='percentage', 
+        y=group_col, 
+        color='esrb_rating',
+        orientation='h',
+        category_orders={'esrb_rating': category_order},
+        color_discrete_map=color_map,
+        template="plotly_dark",
+        title="Target de Audiencia (Distribución ESRB)",
+        hover_data={'count': True, 'percentage': ':.1f%'}
+    )
+    
+    fig.update_layout(
+        xaxis_title="Porcentaje del Portfolio (%)",
+        yaxis_title="",
+        barmode='stack',
+        legend_title="Clasificación",
+        margin=dict(t=50, l=0, r=0, b=0)
+    )
+    
+    return fig
+
+def create_playtime_scatter_chart(df):
+    """
+    Crea un scatter plot de Horas de Juego (X) vs Metacritic (Y)
+    para medir la 'Eficiencia de Diversión'.
+    """
+    if 'playtime_hours' not in df.columns or 'metacritic' not in df.columns or df.empty:
+        return None
+        
+    df_clean = df.dropna(subset=['playtime_hours', 'metacritic']).copy()
+    df_clean['playtime_hours'] = pd.to_numeric(df_clean['playtime_hours'], errors='coerce')
+    df_clean['metacritic'] = pd.to_numeric(df_clean['metacritic'], errors='coerce')
+    
+    # Filtrar valores atípicos absurdos o vacíos
+    df_clean = df_clean[(df_clean['playtime_hours'] > 0) & (df_clean['playtime_hours'] < 300)]
+    
+    if df_clean.empty:
+        return None
+
+    # Si hay demasiados puntos, coloreamos por el género principal
+    df_clean['main_genre'] = df_clean['genres'].astype(str).str.split(',').str[0]
+    
+    fig = px.scatter(
+        df_clean,
+        x='playtime_hours',
+        y='metacritic',
+        color='main_genre',
+        hover_name='title',
+        hover_data=['studio', 'metacritic', 'playtime_hours'],
+        template="plotly_dark",
+        title="Compromiso del Jugador: Duración vs Calidad",
+        opacity=0.7
+    )
+    
+    fig.update_layout(
+        xaxis_title="Horas de Juego Promedio (Playtime)",
+        yaxis_title="Nota Crítica (Metacritic)",
+        legend_title="Género Principal",
+        margin=dict(t=50, l=0, r=0, b=0)
+    )
+    
+    # Líneas medias de referencia
+    median_playtime = df_clean['playtime_hours'].median()
+    median_meta = df_clean['metacritic'].median()
+    
+    fig.add_vline(x=median_playtime, line_dash="dash", line_color="rgba(255,255,255,0.3)", annotation_text=f"Mediana: {median_playtime:.1f}h")
+    fig.add_hline(y=median_meta, line_dash="dash", line_color="rgba(255,255,255,0.3)", annotation_text=f"Mediana: {median_meta:.1f}")
+    
     return fig

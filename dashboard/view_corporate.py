@@ -4,8 +4,8 @@ import base64
 import sqlite3
 import config
 from pathlib import Path
-from charts_corporate import create_sunburst_chart, create_treemap_chart, create_genre_and_score_chart, create_genre_pie_chart, create_acquisition_timeline_chart, create_score_distribution_chart, PARENT_COLOR_MAP
-from model_corporate import get_all_corporate_data, get_conglomerate_data
+from charts_corporate import create_sunburst_chart, create_treemap_chart, create_genre_and_score_chart, create_genre_pie_chart, create_acquisition_timeline_chart, create_score_distribution_chart, create_esrb_distribution_chart, create_playtime_scatter_chart, PARENT_COLOR_MAP
+from model_corporate import get_all_corporate_data, get_conglomerate_data, get_all_games_data
 
 # Nombres abreviados para evitar saltos de línea en las tarjetas
 SHORT_NAMES = {
@@ -145,20 +145,32 @@ def render_corporate_module():
             
         st.write("---")
         st.markdown("##### 🎲 Matriz de Portfolio (Volumen vs Calidad por Género)")
-        fig_genres_global = create_genre_and_score_chart(df_corp_all)
+        df_games_all = get_all_games_data()
+        fig_genres_global = create_genre_and_score_chart(df_games_all)
         if fig_genres_global:
             st.plotly_chart(fig_genres_global, use_container_width=True)
         else:
-            st.info("ℹ️ Ejecuta `etl_games.py` para habilitar gráficos de géneros y valoraciones.")
+            st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")
+
+        st.divider()
+        st.markdown("#### 👥 Psicografía y Audiencia Global")
+        col_esrb, col_play = st.columns(2)
+        with col_esrb:
+            fig_esrb = create_esrb_distribution_chart(df_games_all)
+            if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
+        with col_play:
+            fig_play = create_playtime_scatter_chart(df_games_all)
+            if fig_play: st.plotly_chart(fig_play, use_container_width=True)
     else:
         st.subheader(f"🔍 Análisis Estructural: {seleccion}")
         df_filtrado = get_conglomerate_data(seleccion)
         brand_color = PARENT_COLOR_MAP.get(seleccion, "#444444")
         
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         c1.metric("Estudios Filiales", len(df_filtrado))
-        c2.metric("Presencia (Países)", df_filtrado['Country'].nunique())
-        c3.metric("Ciudades Diferentes", df_filtrado['City'].nunique())
+        c2.metric("Total de Juegos", int(df_filtrado['Total_Games'].sum()) if 'Total_Games' in df_filtrado.columns else "N/A")
+        c3.metric("Presencia (Países)", df_filtrado['Country'].nunique())
+        c4.metric("Ciudades Diferentes", df_filtrado['City'].nunique())
         
         st.write("---")
         
@@ -173,14 +185,15 @@ def render_corporate_module():
             st.markdown("### 🎮 Directorio de Estudios")
             
             # Preparamos el dataframe para visualización
-            df_display = df_filtrado[['Studio Name', 'City', 'Country', 'Acquisition_Year', 'Top_Game', 'Metacritic']].copy()
+            df_display = df_filtrado[['Studio Name', 'City', 'Country', 'Acquisition_Year', 'Total_Games', 'Top_Game', 'avg_metacritic']].copy()
             df_display.rename(columns={
                 'Studio Name': 'Estudio',
                 'City': 'Ciudad',
                 'Country': 'País',
                 'Acquisition_Year': 'Año (Adq/Fund)',
-                'Top_Game': 'Juego Destacado',
-                'Metacritic': 'Nota'
+                'Total_Games': 'Juegos',
+                'Top_Game': 'Mejor Juego',
+                'avg_metacritic': 'Nota Media'
             }, inplace=True)
             
             st.dataframe(
@@ -210,12 +223,25 @@ def render_corporate_module():
             if fig_dist:
                 st.plotly_chart(fig_dist, use_container_width=True)
             else:
-                st.info("ℹ️ Ejecuta `etl_games.py` para obtener datos de Metacritic.")
+                st.info("ℹ️ Ejecuta `etl_games_rawg.py` para obtener datos de Metacritic.")
                 
-        st.write("---")
-        st.markdown("##### 🎲 Distribución de Géneros")
         fig_pie = create_genre_pie_chart(df_filtrado, color=brand_color)
         if fig_pie:
             st.plotly_chart(fig_pie, use_container_width=True)
         else:
+            st.info("ℹ️ No hay datos de géneros disponibles.")
+
+        st.write("---")
+        st.markdown("##### 👥 Target de Audiencia y Engagement")
+        # Para el filtrado por conglomerado, necesitamos los juegos de ese conglomerado
+        df_games_all = get_all_games_data()
+        df_games_filt = df_games_all[df_games_all['conglomerate'] == seleccion]
+        
+        c_esrb, c_play = st.columns(2)
+        with c_esrb:
+            fig_esrb = create_esrb_distribution_chart(df_games_filt)
+            if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
+        with c_play:
+            fig_play = create_playtime_scatter_chart(df_games_filt)
+            if fig_play: st.plotly_chart(fig_play, use_container_width=True)
             st.info("ℹ️ No hay suficientes datos de géneros para este conglomerado.")

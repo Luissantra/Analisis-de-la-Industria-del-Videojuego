@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import sqlite3
 import sys
+import os
 from pathlib import Path
 
 # Agregamos el directorio raíz al path para que Python encuentre el módulo 'config'
@@ -30,6 +30,20 @@ st.set_page_config(
 
 # Data loading and caching
 
+def load_data(query):
+    if not os.path.exists(config.DATABASE_PATH):
+        st.error(f"Error crítico: No se encontró la base de datos en {config.DATABASE_PATH}")
+        st.info("Por favor, ejecuta el pipeline primero: python main.py")
+        st.stop()
+    try:
+        conn = sqlite3.connect(config.DATABASE_PATH)
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        return df
+    except Exception as e:
+        st.error(f"Error cargando datos de la base de datos: {e}")
+        st.stop()
+
 # Dimensión geográfica (mapa)
 @st.cache_data(show_spinner="Cargando datos del mapa... Esto puede tardar unos segundos.")
 def load_geo_data():
@@ -37,7 +51,6 @@ def load_geo_data():
   Carga el dataset preparado para el análisis.
   """
 
-  conn = sqlite3.connect(config.DATABASE_PATH)
   query = """
     SELECT 
         sl."Studio Name",
@@ -50,13 +63,25 @@ def load_geo_data():
         d.Acquisition_Year,
         d.Top_Game,
         d.Metacritic,
-        d.Logo_URL
+        d.Logo_URL,
+        CASE 
+            WHEN d.Parent IN (
+                'Sony Interactive Entertainment (PlayStation Studios)', 
+                'Microsoft Gaming (Xbox, ZeniMax, Activision Blizzard)', 
+                'Nintendo', 
+                'Electronic Arts (EA)', 
+                'Take-Two Interactive', 
+                'Ubisoft', 
+                'Tencent', 
+                'Sega Sammy'
+            ) THEN 'Estudio AAA (Conglomerado Mayor)'
+            WHEN d.Parent IS NOT NULL THEN 'Estudio AA / Destacado'
+            ELSE 'Estudio Independiente / Otro'
+        END as Category
     FROM studio_locations sl
-    LEFT JOIN dim_studios_corporate d ON sl."Studio Name" = d."Studio Name"
+    LEFT JOIN dim_studios_corporate d ON LOWER(sl."Studio Name") = LOWER(d."Studio Name")
   """
-  df = pd.read_sql_query(query, conn)
-  conn.close()
-  return df
+  return load_data(query)
 
 # Dimensión de mercado (bolsa)
 @st.cache_data(show_spinner="Cargando lista de activos...")

@@ -1,102 +1,162 @@
-import pandas as pd
-from sqlalchemy import create_engine, text
 import os
 import sys
 from pathlib import Path
 
-# Agregamos el directorio raíz al path para que Python encuentre el módulo 'config'
+import pandas as pd
+from sqlalchemy import create_engine, text
+
 root_path = str(Path(__file__).resolve().parent.parent)
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 import config
 
+log = config.get_logger("build_db")
+
 def build_database():
     """
     Construye la base de datos a partir de los dataset CSVs procesados.
+    Crea la capa semántica consolidada para el dashboard.
     """
-    print("Construyendo la base de datos...")
+    log.info("Construyendo la base de datos...")
 
-    # Crear una conexión a la base de datos SQLite usando SQLAlchemy
-    engine = create_engine(f'sqlite:///{config.DATABASE_PATH}')
-    print("Conexión con la base de datos establecida.")
+    engine = create_engine(f"sqlite:///{config.DATABASE_PATH}")
+    log.info("Conexión con la base de datos establecida.")
 
-    # --- Tabla GameDevMap (Estudios) ---
-    # NOTA: Ahora `studio_locations` se carga directamente a SQLite desde `etl_gameDevMap.py`.
-    print(" [OK] Tabla 'studio_locations' es gestionada directamente por el ETL.")
-
-    # --- Tabla Master Data Management (Estudios IGDB) ---
+    # ─── Tabla Master Data Management (Estudios IGDB) ───────────────
     MDM_CSV = config.PROCESSED_DATA_DIR / "mdm" / "master_studios.csv"
     if os.path.exists(MDM_CSV):
-        print(f" - Cargando Master Data desde {MDM_CSV}...")
+        log.info("Cargando Master Data desde %s...", MDM_CSV)
         df_mdm = pd.read_csv(MDM_CSV)
-        df_mdm.to_sql('master_studios', con=engine, if_exists='replace', index=False)
-        print(" [OK] Tabla 'master_studios' creada y datos insertados.")
+        df_mdm.to_sql("master_studios", con=engine, if_exists="replace", index=False)
+        log.info("Tabla 'master_studios' creada y datos insertados.")
     else:
-        print(f" [Advertencia] No se encontró {MDM_CSV}. Ejecuta scripts/etl_igdb.py primero.")
+        log.warning("No se encontró %s. Ejecuta scripts/etl_igdb.py primero.", MDM_CSV)
 
-    # --- Tabla Stock_Prices (Bolsa) ---
+    # ─── Tabla Stock_Prices (Bolsa) ─────────────────────────────────
     if os.path.exists(config.MARKETDATA_CSV):
-        print(f" - Cargando datos desde {config.MARKETDATA_CSV}...")
+        log.info("Cargando datos de mercado desde %s...", config.MARKETDATA_CSV)
         df_market = pd.read_csv(config.MARKETDATA_CSV)
-        
-        df_market.to_sql('stock_prices', con=engine, if_exists='replace', index=False)
-        print(" [OK] Tabla 'stock_prices' creada y datos insertados.")
+        df_market.to_sql("stock_prices", con=engine, if_exists="replace", index=False)
+        log.info("Tabla 'stock_prices' creada y datos insertados.")
     else:
-        print(f" [Advertencia] No se encontró {config.MARKETDATA_CSV}. Ejecuta la extracción de mercado primero.")
+        log.warning("No se encontró %s. Ejecuta la extracción de mercado primero.", config.MARKETDATA_CSV)
 
-    # --- Consolidación para el Dashboard (Capa Semántica) ---
-    print(" - Creando tabla consolidada 'dim_studios_corporate' para el Dashboard...")
+    # ─── Consolidación para el Dashboard (Capa Semántica) ──────────
+    log.info("Creando tabla consolidada 'dim_studios_corporate' para el Dashboard...")
     with engine.begin() as connection:
         connection.execute(text("DROP TABLE IF EXISTS dim_studios_corporate;"))
+        connection.execute(text("DROP VIEW IF EXISTS v_games_detail;"))
+        
+        # Elimina la antigua tabla de metadata si aún existe
+        connection.execute(text("DROP TABLE IF EXISTS games_metadata;"))
+
+        # Construcción de la capa corporativa (1 fila por notable_studio)
         connection.execute(text("""
             CREATE TABLE dim_studios_corporate AS
             SELECT 
-                c.name as Parent,
-                s.name as "Studio Name",
-                CASE 
-                    WHEN sl.City IS NOT NULL AND sl.City != 'Unknown City' THEN sl.City
-                    WHEN s.city IS NOT NULL AND s.city != '' AND s.city != 'N/A' THEN s.city
-                    ELSE 'N/A'
-                END as City,
-                CASE 
-                    WHEN sl.Country IS NOT NULL AND sl.Country != 'Unknown Country' THEN sl.Country
-                    WHEN s.country IS NOT NULL AND s.country != '' AND s.country != 'N/A' THEN s.country
-                    ELSE 'N/A'
-                END as Country,
-                sl.Lat as Lat,
-                sl.Lon as Lon,
+                c.name AS Parent,
+                s.name AS "Studio Name",
+                COALESCE(s.city, 'N/A') AS City,
+                COALESCE(s.country, 'N/A') AS Country,
+                sl.Lat, 
+                sl.Lon, 
                 sl.Region,
                 COALESCE(
-                    strftime('%Y', datetime(m.igdb_start_date, 'unixepoch')), 
-                    s.acquisition_year, 
-                    'No registrado') AS Acquisition_Year,
-                COALESCE(m.igdb_top_game, 'No registrado') AS Top_Game,
-                COALESCE(SUBSTR(gm.released, 1, 4), 'N/A') AS Game_Year,
-                COALESCE(gm.genres, 'Desconocido') AS Genres,
-                COALESCE(gm.metacritic, m.igdb_top_game_rating, 'N/A') AS Metacritic,
-                COALESCE(gm.user_rating, 0) AS User_Rating,
-                COALESCE(gm.ratings_count, 0) AS Ratings_Count,
-                (COALESCE(gm.user_rating, 0) * 20) AS User_Score_100,
-                CASE WHEN COALESCE(gm.metacritic, m.igdb_top_game_rating) IS NOT NULL AND gm.user_rating IS NOT NULL 
-                     THEN COALESCE(gm.metacritic, m.igdb_top_game_rating) - (gm.user_rating * 20) 
-                     ELSE NULL END as Review_Bombing_Index,
-                COALESCE(m.igdb_logo_url, '') as Logo_URL,
-                COALESCE(m.igdb_description, 'Sin descripción') as Description
+                    CASE 
+                        WHEN m.igdb_start_date > 0 AND m.igdb_start_date < 2147483647 
+                        THEN strftime('%Y', datetime(m.igdb_start_date, 'unixepoch'))
+                        ELSE NULL 
+                    END,
+                    s.acquisition_year,
+                    'No registrado'
+                ) AS Acquisition_Year,
+                m.igdb_logo_url AS Logo_URL,
+                COALESCE(m.igdb_description, 'Sin descripción') AS Description,
+                dr.rawg_developer_id,
+                COALESCE(dr.games_count, 0) AS Total_Games,
+                
+                -- Campos agregados desde la nueva tabla games
+                COALESCE(agg.avg_metacritic, 'N/A') AS avg_metacritic,
+                COALESCE(agg.avg_user_rating, 'N/A') AS avg_user_rating,
+                COALESCE(agg.total_ratings_count, 0) AS total_ratings_count,
+                COALESCE(agg.top_game_title, m.igdb_top_game, 'No registrado') AS Top_Game,
+                COALESCE(agg.top_game_metacritic, m.igdb_top_game_rating, 'N/A') AS top_game_metacritic,
+                COALESCE(agg.primary_genres, 'Desconocido') AS Genres,
+                
+                -- Retrocompatibilidad (mantener nombres de columnas viejas si el dashboard las usa directamente)
+                COALESCE(agg.top_game_title, m.igdb_top_game, 'No registrado') AS Top_Game_Legacy,
+                COALESCE(agg.avg_metacritic, m.igdb_top_game_rating, 'N/A') AS Metacritic,
+                COALESCE(agg.avg_user_rating, 0) AS User_Rating,
+                COALESCE(agg.total_ratings_count, 0) AS Ratings_Count,
+                
+                -- Métricas calculadas para Review Bombing
+                (COALESCE(agg.avg_user_rating, 0) * 20) AS User_Score_100,
+                CASE 
+                    WHEN agg.avg_metacritic IS NOT NULL AND agg.avg_user_rating IS NOT NULL 
+                    THEN agg.avg_metacritic - (agg.avg_user_rating * 20) 
+                    ELSE NULL 
+                END AS Review_Bombing_Index
+                
             FROM conglomerates c
             JOIN notable_studios s ON c.id = s.parent_id
             LEFT JOIN master_studios m ON s.id = m.internal_id
-            LEFT JOIN studio_locations sl ON s.name = sl."Studio Name"
-            LEFT JOIN games_metadata gm ON s.id = gm.id
-            GROUP BY c.name, s.name;
+            LEFT JOIN studio_locations sl ON s.name = sl."Studio Name" COLLATE NOCASE
+            LEFT JOIN developers_rawg dr ON s.id = dr.studio_id
+            LEFT JOIN (
+                SELECT 
+                    g.developer_rawg_id,
+                    ROUND(AVG(g.metacritic), 1) AS avg_metacritic,
+                    ROUND(AVG(g.rawg_rating), 2) AS avg_user_rating,
+                    SUM(g.rawg_ratings_count) AS total_ratings_count,
+                    
+                    -- Obtener el título del juego con mayor metacritic
+                    (SELECT g2.title FROM games g2 
+                     WHERE g2.developer_rawg_id = g.developer_rawg_id 
+                     AND g2.metacritic IS NOT NULL
+                     ORDER BY g2.metacritic DESC LIMIT 1) AS top_game_title,
+                     
+                    (SELECT MAX(g3.metacritic) FROM games g3 
+                     WHERE g3.developer_rawg_id = g.developer_rawg_id) AS top_game_metacritic,
+                     
+                    -- Obtener el género primario (el más común para este dev)
+                    (SELECT g4.genres FROM games g4 
+                     WHERE g4.developer_rawg_id = g.developer_rawg_id AND g4.genres != ''
+                     GROUP BY g4.genres ORDER BY COUNT(*) DESC LIMIT 1) AS primary_genres
+                     
+                FROM games g
+                -- Solo contar juegos que tengan al menos algún rating
+                WHERE (g.metacritic > 0 OR g.rawg_rating > 0)
+                GROUP BY g.developer_rawg_id
+            ) agg ON dr.rawg_developer_id = agg.developer_rawg_id;
         """))
+
+        # Crear vista detallada de juegos para análisis profundo si se necesita en el futuro
+        connection.execute(text("""
+            CREATE VIEW v_games_detail AS
+            SELECT 
+                c.name AS conglomerate,
+                s.name AS studio,
+                g.title, g.release_date, g.release_year,
+                g.metacritic, g.rawg_rating, g.rawg_ratings_count,
+                g.genres, g.platforms, g.esrb_rating, g.playtime_hours
+            FROM games g
+            JOIN developers_rawg dr ON g.developer_rawg_id = dr.rawg_developer_id
+            JOIN notable_studios s ON dr.studio_id = s.id
+            JOIN conglomerates c ON s.parent_id = c.id;
+        """))
+
+        # Índices para optimizar las consultas en Streamlit
+        connection.execute(text("CREATE INDEX IF NOT EXISTS idx_dim_parent ON dim_studios_corporate(Parent);"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS idx_dim_country ON dim_studios_corporate(Country);"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS idx_stock_company ON stock_prices('Company Name');"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS idx_stock_date ON stock_prices(Date);"))
         
-        # Creación de índices para optimizar las consultas en Streamlit
-        connection.execute(text('CREATE INDEX idx_dim_parent ON dim_studios_corporate(Parent);'))
-        connection.execute(text('CREATE INDEX idx_dim_country ON dim_studios_corporate(Country);'))
-        connection.execute(text('CREATE INDEX idx_stock_company ON stock_prices("Company Name");'))
-        connection.execute(text('CREATE INDEX idx_stock_date ON stock_prices(Date);'))
-    print(" [OK] Capa semántica consolidada.")
+        # Índices para la tabla games (útiles si el dashboard consulta games directamente)
+        connection.execute(text("CREATE INDEX IF NOT EXISTS idx_games_dev ON games(developer_rawg_id);"))
+        connection.execute(text("CREATE INDEX IF NOT EXISTS idx_games_year ON games(release_year);"))
+
+    log.info("Capa semántica consolidada exitosamente.")
 
 if __name__ == "__main__":
     build_database()

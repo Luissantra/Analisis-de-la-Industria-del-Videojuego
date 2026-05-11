@@ -15,7 +15,7 @@ except Exception as e:
     BRAND_COLORS = {}
     KEY_EVENTS = []
 
-def create_comparison_line_chart(df, timeframe, benchmark="Ninguno"):
+def create_comparison_line_chart(df, timeframe, benchmark="Ninguno", dynamic_events=None):
     """
     Gráfico de líneas con colores de marca y recalculado en base 0.
     """
@@ -48,17 +48,26 @@ def create_comparison_line_chart(df, timeframe, benchmark="Ninguno"):
     max_date = df['Date'].max()
     companies_in_df = df['Company Name'].unique()
 
-    for item in KEY_EVENTS:
-        event_date = pd.to_datetime(item["date"])
+    all_events = KEY_EVENTS.copy()
+    if dynamic_events:
+        all_events.extend(dynamic_events)
+
+    y_levels = [1.02, 1.10, 1.18]
+    for i, item in enumerate(all_events):
+        event_date = pd.to_datetime(item["date"], errors='coerce')
+        if pd.isna(event_date):
+            continue
+            
         if min_date <= event_date <= max_date and item["company"] in companies_in_df:
+            y_pos = y_levels[i % len(y_levels)]
             fig.add_vline(x=event_date, line_width=1, line_dash="dash", line_color=BRAND_COLORS.get(item["company"], "white"))
             fig.add_annotation(
                 x=event_date, 
-                y=1.05, 
+                y=y_pos, 
                 yref='paper', 
                 text=item["event"],
                 showarrow=False,
-                font=dict(color=BRAND_COLORS.get(item["company"], "white"), size=10),
+                font=dict(color=BRAND_COLORS.get(item["company"], "white"), size=9),
                 textangle=-45 
             )
     # Añadimos el sufijo "%" al eje Y y redondeamos el texto flotante a 2 decimales
@@ -68,7 +77,7 @@ def create_comparison_line_chart(df, timeframe, benchmark="Ninguno"):
     fig.update_layout(hovermode="x unified", margin=dict(t=80)) 
     return fig
 
-def create_candlestick_chart(df, company_name, timeframe):
+def create_candlestick_chart(df, company_name, timeframe, dynamic_events=None):
     """
     Vista Pro: Gráfico de velas japonesas con Volumen y Medias Móviles (SMA 50/200).
     """
@@ -141,15 +150,26 @@ def create_candlestick_chart(df, company_name, timeframe):
     # Añadir Hitos al gráfico de velas
     min_date = company_data['Date'].min()
     max_date = company_data['Date'].max()
-    for item in KEY_EVENTS:
+    
+    all_events = KEY_EVENTS.copy()
+    if dynamic_events:
+        all_events.extend(dynamic_events)
+        
+    y_levels = [1.02, 1.12, 1.22]
+    for i, item in enumerate(all_events):
         if item["company"] == company_name:
-            event_date = pd.to_datetime(item["date"])
+            event_date = pd.to_datetime(item["date"], errors='coerce')
+            if pd.isna(event_date):
+                continue
+                
             if min_date <= event_date <= max_date:
-                fig.add_vline(x=event_date, line_width=1, line_dash="dash", line_color="#888", row=1, col=1)
+                y_pos = y_levels[i % len(y_levels)]
+                fig.add_vline(x=event_date, line_width=1, line_dash="dot", line_color="#888", row=1, col=1)
                 fig.add_annotation(
-                    x=event_date, y=1.05, yref='paper', 
+                    x=event_date, y=y_pos, yref='paper', 
                     text=item["event"], showarrow=False, 
-                    font=dict(color="#AAA", size=10)
+                    font=dict(color="#AAA", size=9),
+                    textangle=-30
                 )
 
     # Limpiar y modernizar el diseño general

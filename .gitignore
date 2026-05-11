@@ -18,6 +18,13 @@ data/
 *.sqlite3
 *.csv
 
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
 # Archivos del sistema operativo (macOS)
 .DS_Store
 .AppleDouble

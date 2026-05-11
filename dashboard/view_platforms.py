@@ -55,7 +55,7 @@ def render_platforms_module():
                     # Mostramos la imagen con el logo o render 3D de la consola
                     with open(img_path, "rb") as img_file:
                         encoded = base64.b64encode(img_file.read()).decode()
-                    st.markdown(f'<div style="text-align:center; padding: 20px; background-color: rgba(255,255,255,0.05); border-radius: 15px;"><img src="data:image/png;base64,{encoded}" style="max-width: 100%; max-height: 250px; drop-shadow: 0 10px 15px rgba(0,0,0,0.5);"></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="text-align:center; padding: 20px; background-color: rgba(255,255,255,0.05); border-radius: 15px;"><img src="data:image/png;base64,{encoded}" style="max-width: 100%; max-height: 250px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));"></div>', unsafe_allow_html=True)
                 else:
                     st.info("Imagen no disponible.")
             else:
@@ -66,6 +66,9 @@ def render_platforms_module():
             st.markdown(f"**Fabricante:** {consola_data['manufacturer']}")
             st.markdown(f"**Lanzamiento:** {consola_data['release_year']}")
             st.markdown(f"**Generación:** {consola_data['generation']}")
-            st.metric("Ventas Totales", f"{consola_data['units_sold_millions']} Millones")
+            
+            ventas = consola_data['units_sold_millions']
+            ventas_str = f"{ventas} Millones" if pd.notna(ventas) and ventas > 0 else "N/A"
+            st.metric("Ventas Totales", ventas_str)
     else:
         st.info("👆 Haz clic en cualquier consola en la línea de tiempo superior para ver sus detalles.")
