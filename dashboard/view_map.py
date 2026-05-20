@@ -17,8 +17,7 @@ def render_map_module(filtered_df, mode="Producción"):
     if mode == "Mercado":
         st.subheader("Mercado Global: Ingresos y Audiencia por País")
         
-        # Cargar datos de mercado
-        json_path = Path(config.ROOT_DIR if hasattr(config, 'ROOT_DIR') else config.BASE_DIR) / "config_data" / "gaming_markets_geo.json"
+        json_path = config.BASE_DIR / "config_data" / "gaming_markets_geo.json"
         if not json_path.exists():
             st.error("No se encontró el dataset de mercados gaming en config_data/gaming_markets_geo.json")
             return

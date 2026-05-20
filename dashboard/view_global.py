@@ -12,7 +12,7 @@ def get_industry_comparison_data() -> pd.DataFrame:
     """
     Carga los datos estáticos de comparación de industrias desde el JSON configurado.
     """
-    json_path = Path(config.ROOT_DIR) / "config_data" / "industry_comparison.json"
+    json_path = config.BASE_DIR / "config_data" / "industry_comparison.json"
     if not json_path.exists():
         return pd.DataFrame()
     
