@@ -154,15 +154,15 @@ def create_intersectoral_chart(df: pd.DataFrame) -> go.Figure:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
     """Crea un bar-chart race animado que muestra la evolución acumulada
-    de lanzamientos de videojuegos por género a lo largo del tiempo.
+    de ventas de videojuegos por género a lo largo del tiempo (1990-2020).
 
     Parámetros
     ----------
     df : pd.DataFrame
         Columnas esperadas:
-          - ``Año``        (int) — Año del frame de animación.
-          - ``Género``     (str) — Nombre del género.
-          - ``Acumulado``  (int) — Conteo acumulado de lanzamientos.
+          - ``Año``                 (int) — Año del frame de animación.
+          - ``Género``              (str) — Nombre del género.
+          - ``Ventas_Acumuladas``   (float) — Ventas acumuladas en millones de copias.
 
     Devuelve
     --------
@@ -175,8 +175,8 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
     for year, group in df.groupby("Año"):
         top10 = (
             group
-            .nlargest(10, "Acumulado")
-            .sort_values("Acumulado", ascending=True)   # ascendente para que el mayor quede arriba
+            .nlargest(10, "Ventas_Acumuladas")
+            .sort_values("Ventas_Acumuladas", ascending=True)   # ascendente para que el mayor quede arriba
         )
         frames.append(top10)
 
@@ -188,15 +188,15 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
     # ── Figura animada con Plotly Express ──
     fig = px.bar(
         df_top,
-        x="Acumulado",
+        x="Ventas_Acumuladas",
         y="Género",
         color="Género",
         orientation="h",
         animation_frame="Año",
-        text="Acumulado",
+        text="Ventas_Acumuladas",
         color_discrete_sequence=px.colors.qualitative.Vivid,
         labels={
-            "Acumulado": "Juegos Acumulados",
+            "Ventas_Acumuladas": "Ventas Acumuladas (Millones de Copias)",
             "Género": "Género",
             "Año": "Año",
         },
@@ -204,25 +204,39 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
 
     # ── Estilo de las barras y etiquetas ──
     fig.update_traces(
-        texttemplate="%{text:,.0f}",
+        texttemplate="%{text:,.1f}M",
         textposition="outside",
-        textfont=dict(size=12, color="#E2E8F0"),
+        textfont=dict(size=11, color="#E2E8F0"),
         marker_line_width=0,
         marker_cornerradius=4,
         hovertemplate=(
             "<b>%{y}</b><br>"
-            "Juegos acumulados: %{x:,.0f}"
+            "Ventas acumuladas: %{x:,.1f}M copias"
             "<extra></extra>"
         ),
     )
 
-    # ── Configurar tiempos de animación ──
+    # ── Escala dinámica del eje X frame por frame ──
+    for frame in fig.frames:
+        frame_year = int(frame.name)
+        max_val = df_top[df_top["Año"] == frame_year]["Ventas_Acumuladas"].max()
+        # Dar un 12% de margen a la derecha para que las etiquetas "outside" de texto no se solapen o corten
+        x_max = max_val * 1.15 if max_val > 0 else 10
+        frame.layout.update(xaxis=dict(range=[0, x_max]))
+
+    # Configurar el rango del primer frame en la vista inicial del layout
+    first_year = df_top["Año"].min()
+    first_max = df_top[df_top["Año"] == first_year]["Ventas_Acumuladas"].max()
+    first_x_max = first_max * 1.15 if first_max > 0 else 10
+    fig.update_layout(xaxis=dict(range=[0, first_x_max]))
+
+    # ── Configurar tiempos de animación más fluidos ──
     fig.layout.updatemenus[0].buttons[0].args[1]["frame"] = dict(
-        duration=800,
+        duration=650,
         redraw=True,
     )
     fig.layout.updatemenus[0].buttons[0].args[1]["transition"] = dict(
-        duration=500,
+        duration=450,
         easing="cubic-in-out",
     )
 
@@ -246,8 +260,8 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
                         args=[
                             None,
                             dict(
-                                frame=dict(duration=800, redraw=True),
-                                transition=dict(duration=500, easing="cubic-in-out"),
+                                frame=dict(duration=650, redraw=True),
+                                transition=dict(duration=450, easing="cubic-in-out"),
                                 fromcurrent=True,
                                 mode="immediate",
                             ),
@@ -286,13 +300,13 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
     fig.update_layout(
         **_LAYOUT_DEFAULTS,
         title=dict(
-            text="Evolución de Lanzamientos por Género — Bar Chart Race",
+            text="La Carrera Comercial por Género — Ventas Acumuladas (VGChartz)",
             font=dict(size=18, color="#F8FAFC"),
             x=0.5,
             xanchor="center",
         ),
         xaxis=dict(
-            title="Juegos Acumulados",
+            title="Ventas Acumuladas (Millones de Copias)",
             gridcolor="rgba(148,163,184,0.10)",
             showline=False,
             zeroline=False,

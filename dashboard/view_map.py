@@ -29,36 +29,51 @@ def render_map_module(filtered_df, mode="Producción"):
         except Exception as e:
             st.error(f"Error al cargar datos del mercado: {e}")
             return
-            
-        # Calcular métricas dinámicas
+             # Calcular métricas dinámicas
         total_rev = df_market["revenue_bn"].sum()
         total_players = df_market["players_m"].sum()
         weighted_arpu = (total_rev * 1000) / total_players
         
+        # Región líder por ingresos
+        region_totals = df_market.groupby("region")["revenue_bn"].sum()
+        top_region = region_totals.idxmax()
+        top_region_val = region_totals.max()
+        
         st.markdown("""
         <style>
         .metric-card {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 15px;
+            background-color: rgba(30, 41, 59, 0.45);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 16px;
             text-align: center;
-            border-left: 4px solid #8B5CF6;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #10B981; /* Verde esmeralda para Ingresos */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.25s ease;
         }
-        .metric-card.players { border-left-color: #06B6D4; }
-        .metric-card.arpu { border-left-color: #EC4899; }
-        .metric-value { font-size: 24px; font-weight: bold; margin: 0; }
-        .metric-label { font-size: 13px; color: #aaa; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            background-color: rgba(30, 41, 59, 0.6);
+            border-color: rgba(255,255,255,0.1);
+        }
+        .metric-card.players { border-left-color: #06B6D4; } /* Cian para audiencia */
+        .metric-card.arpu { border-left-color: #F59E0B; } /* Ámbar para ARPU */
+        .metric-card.leader { border-left-color: #EC4899; } /* Rosa para la región líder */
+        .metric-value { font-size: 22px; font-weight: 800; margin: 0; color: #F8FAFC; }
+        .metric-label { font-size: 12px; color: #94A3B8; margin: 4px 0 0 0; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
         </style>
         """, unsafe_allow_html=True)
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.markdown(f'<div class="metric-card"><p class="metric-value">${total_rev:.1f} Bn</p><p class="metric-label">💰 Ingresos Globales</p></div>', unsafe_allow_html=True)
         with col2:
-            st.markdown(f'<div class="metric-card players"><p class="metric-value">{total_players / 1000:.2f} Bn</p><p class="metric-label">👥 Audiencia Gamer (Jugadores)</p></div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="metric-card players"><p class="metric-value">{total_players / 1000:.2f} Bn</p><p class="metric-label">👥 Audiencia Gamer</p></div>', unsafe_allow_html=True)
         with col3:
             st.markdown(f'<div class="metric-card arpu"><p class="metric-value">${weighted_arpu:.2f}</p><p class="metric-label">📊 ARPU Medio Anual</p></div>', unsafe_allow_html=True)
+        with col4:
+            st.markdown(f'<div class="metric-card leader"><p class="metric-value" style="font-size: 19px; padding-top: 2px;">{top_region}</p><p class="metric-label">🏆 Región Líder</p></div>', unsafe_allow_html=True)
             
         st.divider()
         
@@ -66,13 +81,13 @@ def render_map_module(filtered_df, mode="Producción"):
         df_market["arpu"] = (df_market["revenue_bn"] * 1000) / df_market["players_m"]
         df_market["global_revenue_pct"] = (df_market["revenue_bn"] / total_rev) * 100
         
-        # Mapa Choropleth con Plotly
+        # Mapa Choropleth con Plotly usando paleta Tealgrn
         fig = px.choropleth(
             df_market,
             locations="iso_alpha",
             color="revenue_bn",
             hover_name="country",
-            color_continuous_scale="Purples",
+            color_continuous_scale="Tealgrn",
             labels={'revenue_bn': 'Ingresos ($Bn)'},
             template="plotly_dark",
             custom_data=["region", "players_m", "arpu", "global_revenue_pct"]
@@ -94,7 +109,9 @@ def render_map_module(filtered_df, mode="Producción"):
             projection_type="natural earth",
             coastlinecolor="rgba(255,255,255,0.15)",
             landcolor="rgba(255,255,255,0.02)",
-            showland=True
+            showland=True,
+            showocean=True,
+            oceancolor="rgba(15,23,42,0.9)"
         )
         
         fig.update_layout(
@@ -119,19 +136,20 @@ def render_map_module(filtered_df, mode="Producción"):
         col_l, col_r = st.columns(2)
         
         with col_l:
-            # Treemap de distribución por región y país
+            # Treemap de distribución por región y país usando Tealgrn
             fig_tree = px.treemap(
                 df_market,
                 path=["region", "country"],
                 values="revenue_bn",
                 color="revenue_bn",
-                color_continuous_scale="Purples",
+                color_continuous_scale="Tealgrn",
                 template="plotly_dark",
                 title="Estructura de Ingresos por Región Geográfica"
             )
             fig_tree.update_traces(
                 textinfo="label+value",
-                hovertemplate="<b>%{label}</b><br>Ingresos: $%{value:.1f} Bn<extra></extra>"
+                hovertemplate="<b>%{label}</b><br>Ingresos: $%{value:.1f} Bn<extra></extra>",
+                marker=dict(line=dict(color='rgba(15,23,42,0.6)', width=1))
             )
             fig_tree.update_layout(
                 margin=dict(t=40, b=10, l=10, r=10),
@@ -141,7 +159,7 @@ def render_map_module(filtered_df, mode="Producción"):
             st.plotly_chart(fig_tree, use_container_width=True)
             
         with col_r:
-            # Bar chart de los países con mayor ARPU (Ingreso medio por jugador)
+            # Bar chart de los países con mayor ARPU usando paleta YlOrRd
             top_arpu = df_market.sort_values(by="arpu", ascending=False)
             fig_bar = px.bar(
                 top_arpu,
@@ -149,19 +167,24 @@ def render_map_module(filtered_df, mode="Producción"):
                 y="country",
                 orientation="h",
                 color="arpu",
-                color_continuous_scale="Purples",
+                color_continuous_scale="YlOrRd",
                 template="plotly_dark",
                 labels={'arpu': 'ARPU ($)', 'country': 'País'},
-                title="Gasto Medio Anual por Jugador (ARPU en USD)"
+                title="Gasto Medio Anual por Jugador (ARPU en USD)",
+                text="arpu"
             )
             fig_bar.update_traces(
-                hovertemplate="<b>%{y}</b><br>ARPU: $%{x:.2f}<extra></extra>"
+                hovertemplate="<b>%{y}</b><br>ARPU: $%{x:.2f}<extra></extra>",
+                texttemplate="$%{text:.0f}",
+                textposition="outside",
+                textfont=dict(size=11, color="#E2E8F0")
             )
             fig_bar.update_layout(
                 margin=dict(t=40, b=10, l=10, r=10),
                 height=350,
                 coloraxis_showscale=False,
-                yaxis=dict(categoryorder="total ascending")
+                yaxis=dict(categoryorder="total ascending"),
+                xaxis=dict(showgrid=True, gridcolor="rgba(148,163,184,0.08)")
             )
             st.plotly_chart(fig_bar, use_container_width=True)
             

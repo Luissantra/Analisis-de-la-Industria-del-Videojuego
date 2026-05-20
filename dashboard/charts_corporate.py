@@ -372,22 +372,34 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
     El tamaño de la burbuja es suavizado mediante raíz cuadrada para evitar que los indies
     dominen toda la escala, y los cuadrantes están coloreados de forma traslúcida y elegante.
     """
-    df_clean = df.copy()
+    # Neutralizar PyArrow si está activo y forzar a pandas nativo
+    df_clean = df.to_pandas() if hasattr(df, 'to_pandas') else df.copy()
     
-    # Asegurar tipos correctos
+    # Reemplazar cadenas 'N/A' explícitamente por NaN y forzar tipos numéricos de forma robusta
+    df_clean['avg_metacritic'] = df_clean['avg_metacritic'].replace('N/A', None)
+    df_clean['total_ratings_count'] = df_clean['total_ratings_count'].replace('N/A', None).replace(0, None)
+    
     df_clean['avg_metacritic'] = pd.to_numeric(df_clean['avg_metacritic'], errors='coerce')
     df_clean['total_ratings_count'] = pd.to_numeric(df_clean['total_ratings_count'], errors='coerce')
-    df_clean['Total_Games'] = pd.to_numeric(df_clean['Total_Games'], errors='coerce')
+    df_clean['Total_Games'] = pd.to_numeric(df_clean['Total_Games'], errors='coerce').fillna(0)
     
-    # Agrupar por conglomerado
+    # Agrupar por conglomerado utilizando promedio exclusivo sobre estudios válidos
     g = df_clean.groupby('Parent').agg(
         avg_meta=('avg_metacritic', 'mean'),
         avg_pop=('total_ratings_count', 'mean'),
         total_games=('Total_Games', 'sum')
     ).reset_index()
     
-    # Limpiar nulos
-    g = g.dropna(subset=['avg_meta', 'avg_pop', 'total_games'])
+    # Solo requerimos que tengan un conteo de juegos > 0 para representarlos (si no tienen metacritic, les asignamos la media global para no perderlos, o los omitimos si explícitamente no tienen ningún dato útil)
+    g = g.dropna(subset=['total_games'])
+    g = g[g['total_games'] > 0]
+    
+    # Rellenar con la media si no hay datos de metacritic o popularidad para ese conglomerado específico
+    meta_global_mean = g['avg_meta'].mean() if not g['avg_meta'].isna().all() else 70
+    pop_global_mean = g['avg_pop'].mean() if not g['avg_pop'].isna().all() else 1000
+    
+    g['avg_meta'] = g['avg_meta'].fillna(meta_global_mean)
+    g['avg_pop'] = g['avg_pop'].fillna(pop_global_mean)
     
     if g.empty:
         return None

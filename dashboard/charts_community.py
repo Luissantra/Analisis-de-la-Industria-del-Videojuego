@@ -372,6 +372,7 @@ def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
     Crea un Scatter Plot de 4 cuadrantes (El Cuadrante del Hype)
     relacionando la popularidad en comunidad (ratings count), calidad profesional (metacritic)
     y ventas reales de VGChartz (tamaño de la burbuja).
+    Incorpora rectángulos de cuadrantes traslúcidos para coherencia estética.
     """
     if df.empty or 'total_sales' not in df.columns:
         return None
@@ -392,6 +393,20 @@ def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
     med_hype = df_clean['rawg_ratings_count'].median()
     med_meta = df_clean['metacritic'].median()
     
+    # Calcular límites de los ejes con un margen estético del 15% para que los textos/burbujas no se corten
+    max_hype = df_clean['rawg_ratings_count'].max()
+    min_hype = df_clean['rawg_ratings_count'].min()
+    max_meta = df_clean['metacritic'].max()
+    min_meta = df_clean['metacritic'].min()
+    
+    hype_range = max_hype - min_hype if max_hype != min_hype else 1000
+    meta_range = max_meta - min_meta if max_meta != min_meta else 10
+    
+    x_min = min_hype - hype_range * 0.15
+    x_max = max_hype + hype_range * 0.15
+    y_min = min_meta - meta_range * 0.15
+    y_max = max_meta + meta_range * 0.15
+    
     fig = px.scatter(
         df_clean,
         x='rawg_ratings_count',
@@ -401,8 +416,8 @@ def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
         hover_name='title',
         custom_data=['studio', 'total_sales', 'release_year'],
         template="plotly_dark",
-        size_max=40,
-        opacity=0.75,
+        size_max=32,
+        opacity=0.85,
         color_discrete_sequence=px.colors.qualitative.Vivid,
         title="El Cuadrante del Hype: Popularidad vs Calidad (Tamaño = Ventas en Millones de Copias)"
     )
@@ -411,32 +426,80 @@ def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
     fig.add_vline(x=med_hype, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Hype Medio: {med_hype:.0f}")
     fig.add_hline(y=med_meta, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Calidad Media: {med_meta:.0f}")
     
-    # Añadir anotaciones en los 4 cuadrantes
-    max_hype = df_clean['rawg_ratings_count'].max()
+    # Dibujar 4 rectángulos traslúcidos representando los cuadrantes de comportamiento
+    fig.update_layout(
+        shapes=[
+            # Éxito Total (Verde traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=med_hype, y0=med_meta,
+                x1=x_max, y1=y_max,
+                fillcolor="rgba(129, 199, 132, 0.04)",
+                line=dict(width=0),
+                layer="below"
+            ),
+            # Joyas Ocultas (Azul traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=x_min, y0=med_meta,
+                x1=med_hype, y1=y_max,
+                fillcolor="rgba(100, 181, 246, 0.04)",
+                line=dict(width=0),
+                layer="below"
+            ),
+            # Fenómenos Virales (Amarillo traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=med_hype, y0=y_min,
+                x1=x_max, y1=med_meta,
+                fillcolor="rgba(255, 213, 79, 0.03)",
+                line=dict(width=0),
+                layer="below"
+            ),
+            # Nicho o Fracaso (Rojo traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=x_min, y0=y_min,
+                x1=med_hype, y1=med_meta,
+                fillcolor="rgba(229, 115, 115, 0.03)",
+                line=dict(width=0),
+                layer="below"
+            )
+        ]
+    )
     
-    # Coordenadas relativas aproximadas para los textos explicativos
+    # Calcular posiciones científicas para centrar las anotaciones de los cuadrantes
+    x_left = x_min + (med_hype - x_min) * 0.5
+    x_right = med_hype + (x_max - med_hype) * 0.5
+    y_bottom = y_min + (med_meta - y_min) * 0.5
+    y_top = med_meta + (y_max - med_meta) * 0.5
+    
     fig.add_annotation(
-        x=med_hype + (max_hype - med_hype) * 0.5, y=95,
+        x=x_right, y=y_top,
         text="🔥 ÉXITO TOTAL<br><sub>Alto Hype & Alta Calidad</sub>",
-        showarrow=False, font=dict(color="#81C784", size=11),
+        showarrow=False, font=dict(color="#81C784", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(129,199,132,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=med_hype - med_hype * 0.5, y=95,
+        x=x_left, y=y_top,
         text="💎 JOYA OCULTA<br><sub>Bajo Hype & Alta Calidad</sub>",
-        showarrow=False, font=dict(color="#64B5F6", size=11),
+        showarrow=False, font=dict(color="#64B5F6", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(100,181,246,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=med_hype + (max_hype - med_hype) * 0.5, y=45,
+        x=x_right, y=y_bottom,
         text="📢 FENÓMENO VIRAL<br><sub>Alto Hype & Baja Calidad</sub>",
-        showarrow=False, font=dict(color="#FFD54F", size=11),
+        showarrow=False, font=dict(color="#FFD54F", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(255,213,79,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=med_hype - med_hype * 0.5, y=45,
+        x=x_left, y=y_bottom,
         text="❌ NICHO O FRACASO<br><sub>Bajo Hype & Baja Calidad</sub>",
-        showarrow=False, font=dict(color="#E57373", size=11),
+        showarrow=False, font=dict(color="#E57373", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(229,115,115,0.3)", borderwidth=1, borderpad=4
     )
     
@@ -444,7 +507,9 @@ def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
         xaxis_title="Volumen de Opiniones en Comunidad (RAWG Ratings Count)",
         yaxis_title="Nota de Prensa Profesional (Metacritic)",
         legend_title="Género Principal",
-        margin=dict(t=60, l=20, r=20, b=20)
+        margin=dict(t=60, l=20, r=20, b=60),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
     )
     
     fig.update_traces(
@@ -458,5 +523,9 @@ def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
             "Ventas Totales: %{customdata[1]:.2f}M copias<extra></extra>"
         )
     )
+    
+    # Aplicar los rangos con márgenes estéticos
+    fig.update_xaxes(range=[x_min, x_max])
+    fig.update_yaxes(range=[y_min, y_max])
     
     return fig

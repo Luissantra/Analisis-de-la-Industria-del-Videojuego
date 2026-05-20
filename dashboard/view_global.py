@@ -51,44 +51,43 @@ def get_genre_evolution_data(df: pd.DataFrame) -> pd.DataFrame:
     
     return df_grouped
 
-def get_genre_race_data(df: pd.DataFrame) -> pd.DataFrame:
+def get_sales_race_data() -> pd.DataFrame:
     """
-    Procesa el catálogo de juegos para obtener el acumulado de lanzamientos año a año por género,
-    listo para el Bar Chart Race animado. Rellena huecos con 0 para una animación fluida.
+    Procesa el acumulado de ventas históricas año a año por género a partir de la tabla game_sales.
+    Rellena huecos con 0 para una animación fluida en el Bar Chart Race de Plotly.
     """
-    if 'genres' not in df.columns or 'release_year' not in df.columns:
+    import sqlite3
+    try:
+        conn = sqlite3.connect(config.DATABASE_PATH)
+        query = """
+            SELECT release_year AS Año, genre AS Género, SUM(total_sales) AS Ventas
+            FROM game_sales
+            WHERE total_sales > 0 AND genre IS NOT NULL AND genre != '' AND release_year BETWEEN 1990 AND 2020
+            GROUP BY release_year, genre
+        """
+        df_sales = pd.read_sql_query(query, conn)
+        conn.close()
+    except Exception as e:
+        config.get_logger("view_global").error(f"Error al cargar ventas para race chart: {e}")
         return pd.DataFrame()
         
-    df_clean = df.copy()
-    df_clean = df_clean.dropna(subset=['release_year', 'genres'])
-    df_clean = df_clean[df_clean['genres'] != '']
-    df_clean = df_clean[df_clean['genres'] != 'Desconocido']
-    
-    df_clean['Genre_List'] = df_clean['genres'].astype(str).str.split(', ')
-    df_exploded = df_clean.explode('Genre_List')
-    
-    # Agrupamos por año y género
-    df_grouped = df_exploded.groupby(['release_year', 'Genre_List']).size().reset_index(name='Game_Count')
-    df_grouped.rename(columns={'release_year': 'Año', 'Genre_List': 'Género'}, inplace=True)
-    
-    # Rango de años válidos para el gráfico animado
+    if df_sales.empty:
+        return pd.DataFrame()
+        
+    # Rango de años válidos para el gráfico animado de ventas reales de VGChartz
     min_year = 1990
-    max_year = 2026
-    df_grouped = df_grouped[(df_grouped['Año'] >= min_year) & (df_grouped['Año'] <= max_year)]
+    max_year = 2020
     
-    if df_grouped.empty:
-        return pd.DataFrame()
-        
     # Crear un producto cartesiano de Años x Géneros para no tener saltos de frames
     all_years = range(min_year, max_year + 1)
-    all_genres = df_grouped['Género'].unique()
+    all_genres = df_sales['Género'].unique()
     idx = pd.MultiIndex.from_product([all_years, all_genres], names=['Año', 'Género'])
     
-    df_filled = df_grouped.set_index(['Año', 'Género']).reindex(idx, fill_value=0).reset_index()
+    df_filled = df_sales.set_index(['Año', 'Género']).reindex(idx, fill_value=0).reset_index()
     
     # Calcular la suma acumulada por género
     df_filled = df_filled.sort_values(by=['Género', 'Año'])
-    df_filled['Acumulado'] = df_filled.groupby('Género')['Game_Count'].cumsum()
+    df_filled['Ventas_Acumuladas'] = df_filled.groupby('Género')['Ventas'].cumsum()
     
     return df_filled
 
@@ -198,15 +197,16 @@ def render_global_vision_module():
     st.markdown("<br><hr style='border: 1px solid rgba(255,255,255,0.1);'><br>", unsafe_allow_html=True)
 
     # --- Capítulo 4: Carrera de los Géneros (Bar Chart Race) ---
-    st.subheader("Capítulo 4: La Carrera por el Dominio (Bar Chart Race)")
+    st.subheader("Capítulo 4: La Carrera Comercial por el Dominio (Bar Chart Race)")
     st.markdown("""
-    Esta simulación animada interactiva muestra cómo los diferentes géneros han competido por el volumen total acumulado de títulos desde 1990 hasta hoy. 
-    Observa cómo el ascenso tecnológico y de audiencias ha impulsado a géneros específicos en momentos clave de la historia.
+    Esta simulación animada muestra cómo los diferentes géneros han competido por el **volumen total acumulado de ventas (en millones de copias)** 
+    desde 1990 hasta 2020 (datos reales de VGChartz). Observa cómo la industria se expande comercialmente y cómo ciertos géneros 
+    alcanzan picos comerciales de masas en momentos clave de la historia de los videojuegos.
     """)
     
-    df_race = get_genre_race_data(df_games_all)
+    df_race = get_sales_race_data()
     if not df_race.empty:
         fig_race = create_genre_race_chart(df_race)
         st.plotly_chart(fig_race, use_container_width=True)
     else:
-        st.info("ℹ️ No hay datos suficientes para animar la carrera de géneros.")
+        st.info("ℹ️ No hay datos de ventas de VGChartz suficientes para animar la carrera de géneros.")
