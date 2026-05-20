@@ -88,8 +88,21 @@ def render_hall_of_fame_module():
     Bienvenidos a la exhibición de los títulos consagrados con el galardón máximo de la industria: 
     el **Game of the Year (GOTY)** otorgado en **The Game Awards** desde 2014 hasta la actualidad.
     """)
-    
-    # CSS inyectado para los efectos hover y transición interactiva premium
+    # Map de estilos de desarrolladoras (colores y glow premium)
+    DEV_STYLE_MAP = {
+        "Team Asobi": {"color": "#00aeef", "glow": "rgba(0, 174, 239, 0.45)"},
+        "Larian Studios": {"color": "#e4a520", "glow": "rgba(228, 165, 32, 0.45)"},
+        "FromSoftware": {"color": "#ff2a2a", "glow": "rgba(255, 42, 42, 0.45)"},
+        "Hazelight Studios": {"color": "#ff6600", "glow": "rgba(255, 102, 0, 0.45)"},
+        "Naughty Dog": {"color": "#c8102e", "glow": "rgba(200, 16, 46, 0.45)"},
+        "Santa Monica Studio": {"color": "#003791", "glow": "rgba(0, 55, 145, 0.45)"},
+        "Nintendo EPD": {"color": "#e60012", "glow": "rgba(230, 0, 18, 0.45)"},
+        "Blizzard Entertainment": {"color": "#107c10", "glow": "rgba(16, 124, 16, 0.45)"},
+        "CD Projekt Red": {"color": "#f00e26", "glow": "rgba(240, 14, 38, 0.45)"},
+        "BioWare": {"color": "#ff4b4b", "glow": "rgba(255, 75, 75, 0.45)"}
+    }
+
+    # CSS inyectado para los efectos hover y transición interactiva premium con variables dinámicas
     st.markdown("""
     <style>
     .netflix-card {
@@ -98,7 +111,7 @@ def render_hall_of_fame_module():
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: 12px;
-        padding: 16px;
+        padding: 18px;
         margin-bottom: 24px;
         transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
@@ -106,16 +119,16 @@ def render_hall_of_fame_module():
         overflow: hidden;
     }
     .netflix-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 25px rgba(230, 0, 18, 0.3) !important;
-        border-color: rgba(230, 0, 18, 0.5) !important;
-        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 12px 28px var(--dev-color-glow) !important;
+        border-color: var(--dev-color) !important;
+        background: rgba(255, 255, 255, 0.06);
     }
     .netflix-img-container {
         border-radius: 8px;
         overflow: hidden;
-        height: 220px;
-        margin-bottom: 12px;
+        height: 245px;
+        margin-bottom: 14px;
         position: relative;
     }
     .netflix-img {
@@ -129,29 +142,33 @@ def render_hall_of_fame_module():
     }
     .goty-badge {
         position: absolute;
-        top: 10px;
-        left: 10px;
-        background: linear-gradient(135deg, #e60012, #ff4545);
+        top: 12px;
+        left: 12px;
+        background: var(--dev-color);
         color: white;
-        padding: 4px 10px;
+        padding: 6px 12px;
         border-radius: 20px;
         font-weight: bold;
-        font-size: 11px;
-        box-shadow: 0 0 10px rgba(230,0,18,0.6);
+        font-size: 13px;
+        box-shadow: 0 0 12px var(--dev-color-glow);
         z-index: 2;
+        font-family: 'Outfit', 'Inter', sans-serif;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .score-badge {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.75);
-        border: 1px solid #4caf50;
+        top: 12px;
+        right: 12px;
+        background: rgba(0, 0, 0, 0.8);
+        border: 2px solid #4caf50;
         color: #4caf50;
-        padding: 4px 8px;
-        border-radius: 4px;
+        padding: 6px 10px;
+        border-radius: 6px;
         font-weight: bold;
-        font-size: 11px;
+        font-size: 14px;
         z-index: 2;
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+        font-family: 'Outfit', 'Inter', sans-serif;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -187,21 +204,26 @@ def render_hall_of_fame_module():
             # Obtener carátula
             cover_url = get_game_cover_url(rawg_id, title)
             
+            # Determinar estilo de la desarrolladora
+            style_info = DEV_STYLE_MAP.get(developer, {"color": "#e60012", "glow": "rgba(230, 0, 18, 0.45)"})
+            dev_color = style_info["color"]
+            dev_glow = style_info["glow"]
+            
             # Renderizar HTML Premium
             card_html = f"""
-            <div class="netflix-card">
+            <div class="netflix-card" style="--dev-color: {dev_color}; --dev-color-glow: {dev_glow};">
                 <div class="netflix-img-container">
                     <div class="goty-badge">🏆 GOTY {year}</div>
                     <div class="score-badge">⭐ {metacritic}</div>
                     <img class="netflix-img" src="{cover_url}" alt="{title}">
                 </div>
-                <h4 style="margin: 0 0 6px 0; font-size: 18px; color: #fff; font-weight: 700; font-family: 'Outfit', 'Inter', sans-serif;">{title}</h4>
-                <div style="font-size: 12px; color: #b3b3b3; margin-bottom: 8px; display: flex; gap: 8px; flex-wrap: wrap; font-family: 'Inter', sans-serif;">
-                    <span>🏢 {developer}</span>
+                <h4 style="margin: 0 0 8px 0; font-size: 20px; color: #fff; font-weight: 700; font-family: 'Outfit', 'Inter', sans-serif;">{title}</h4>
+                <div style="font-size: 14px; color: #d3d3d3; margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap; font-family: 'Inter', sans-serif;">
+                    <span style="font-weight: 600; color: #ffffff;">🏢 {developer}</span>
                     <span>•</span>
-                    <span>🎮 {genre}</span>
+                    <span style="font-weight: 500; color: #e0e0e0;">🎮 {genre}</span>
                 </div>
-                <p style="font-size: 13px; color: #e0e0e0; line-height: 1.5; margin: 0; min-height: 70px; font-family: 'Inter', sans-serif;">
+                <p style="font-size: 14px; color: #e0e0e0; line-height: 1.5; margin: 0; min-height: 80px; font-family: 'Inter', sans-serif;">
                     {description}
                 </p>
             </div>

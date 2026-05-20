@@ -85,36 +85,35 @@ def render_global_vision_module():
         st.warning("⚠️ No se encontraron juegos en la base de datos. Por favor, ejecuta el pipeline primero.")
         return
         
-    # --- Pestañas o Secciones ---
-    tab1, tab2 = st.tabs(["📈 Tendencias y Géneros (Línea de Tiempo)", "🎯 Matriz de Portfolio y Especialización"])
+    # --- Capítulo 1: La Evolución de los Géneros ---
+    st.subheader("Capítulo 1: La Evolución de los Géneros")
+    st.markdown("""
+    El gráfico de áreas acumuladas (Stacked Area Chart) ilustra cómo han cambiado las preferencias de desarrollo 
+    y los lanzamientos por género desde 1980 hasta la actualidad. 
+    *Tip: Haz doble clic en un género en la leyenda para aislarlo, o un solo clic para desactivarlo.*
+    """)
     
-    with tab1:
-        st.subheader("Capítulo 1: La Evolución de los Géneros")
-        st.markdown("""
-        El gráfico de áreas acumuladas (Stacked Area Chart) ilustra cómo han cambiado las preferencias de desarrollo 
-        y los lanzamientos por género desde 1980 hasta la actualidad. 
-        *Tip: Haz doble clic en un género en la leyenda para aislarlo, o un solo clic para desactivarlo.*
-        """)
+    df_evolution = get_genre_evolution_data(df_games_all)
+    fig_area = create_genre_evolution_chart(df_evolution)
+    
+    if fig_area:
+        st.plotly_chart(fig_area, use_container_width=True)
+    else:
+        st.info("ℹ️ No hay suficientes datos para generar el gráfico de evolución de géneros.")
         
-        df_evolution = get_genre_evolution_data(df_games_all)
-        fig_area = create_genre_evolution_chart(df_evolution)
+    st.markdown("<br><hr style='border: 1px solid rgba(255,255,255,0.1);'><br>", unsafe_allow_html=True)
         
-        if fig_area:
-            st.plotly_chart(fig_area, use_container_width=True)
-        else:
-            st.info("ℹ️ No hay suficientes datos para generar el gráfico de evolución de géneros.")
-            
-    with tab2:
-        st.subheader("Capítulo 2: Matriz de Portfolio Global")
-        st.markdown("""
-        Analizamos la relación entre el **volumen de producción** (cantidad de títulos) y la **calidad media por género** (Metacritic). 
-        El tamaño de las burbujas es proporcional al volumen total de títulos.
-        Las zonas superiores representan géneros de alta calidad (aclamación crítica), mientras que el eje horizontal muestra la popularidad comercial o volumen.
-        """)
-        
-        fig_portfolio = create_genre_and_score_chart(df_games_all)
-        
-        if fig_portfolio:
-            st.plotly_chart(fig_portfolio, use_container_width=True)
-        else:
-            st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")
+    # --- Capítulo 2: Matriz de Portfolio Global ---
+    st.subheader("Capítulo 2: Matriz de Portfolio Global")
+    st.markdown("""
+    Analizamos la relación entre el **volumen de producción** (cantidad de títulos) y la **calidad media por género** (Metacritic). 
+    El tamaño de las burbujas es proporcional al volumen total de títulos.
+    Las zonas superiores representan géneros de alta calidad (aclamación crítica), mientras que el eje horizontal muestra la popularidad comercial o volumen.
+    """)
+    
+    fig_portfolio = create_genre_and_score_chart(df_games_all)
+    
+    if fig_portfolio:
+        st.plotly_chart(fig_portfolio, use_container_width=True)
+    else:
+        st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")

@@ -126,6 +126,47 @@ def render_platforms_module():
         Esta visualización Gantt interactiva muestra el **ciclo de vida útil** de cada consola desde su lanzamiento 
         hasta su descontinuación. Permite analizar el solapamiento comercial entre generaciones y la longevidad de cada plataforma.
         """)
+        
+        # Calcular y añadir las métricas de tiempo mínimo, medio y máximo de ciclo de vida
+        df_lifespan = df_filtered.dropna(subset=["release_year", "discontinued_year"])
+        df_lifespan = df_lifespan[df_lifespan["generation"] != "Desconocida / Software"]
+        
+        if not df_lifespan.empty:
+            lifespans = df_lifespan["discontinued_year"].astype(int) - df_lifespan["release_year"].astype(int)
+            min_life = int(lifespans.min())
+            max_life = int(lifespans.max())
+            avg_life = float(lifespans.mean())
+            
+            # Identificar consolas correspondientes
+            min_consoles = df_lifespan[df_lifespan["discontinued_year"].astype(int) - df_lifespan["release_year"].astype(int) == min_life]["name"].tolist()
+            max_consoles = df_lifespan[df_lifespan["discontinued_year"].astype(int) - df_lifespan["release_year"].astype(int) == max_life]["name"].tolist()
+            
+            st.markdown("#### 📊 Duración y Longevidad del Ciclo de Vida")
+            col_g1, col_g2, col_g3 = st.columns(3)
+            with col_g1:
+                st.metric(
+                    label="Ciclo de Vida Mínimo", 
+                    value=f"{min_life} años", 
+                    delta=f"Menor duración: {min_consoles[0]}" if min_consoles else None,
+                    delta_color="off",
+                    help=f"Consola(s) con menor duración comercial: {', '.join(min_consoles)}"
+                )
+            with col_g2:
+                st.metric(
+                    label="Ciclo de Vida Promedio", 
+                    value=f"{avg_life:.1f} años",
+                    help="Duración media general de la vida comercial de las consolas seleccionadas."
+                )
+            with col_g3:
+                st.metric(
+                    label="Ciclo de Vida Máximo", 
+                    value=f"{max_life} años", 
+                    delta=f"Mayor longevidad: {max_consoles[0]}" if max_consoles else None,
+                    delta_color="off",
+                    help=f"Consola(s) con mayor duración comercial activa: {', '.join(max_consoles)}"
+                )
+            st.markdown("<br>", unsafe_allow_html=True)
+            
         fig_gantt = create_lifespan_gantt_chart(df_filtered)
         st.plotly_chart(fig_gantt, use_container_width=True)
     

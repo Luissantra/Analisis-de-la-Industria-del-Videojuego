@@ -359,6 +359,9 @@ def render_community_module():
                 """
                 
             timeline_html += "</div>"
-            st.markdown(timeline_html, unsafe_allow_html=True)
+            # Limpiar indentación de cada línea para evitar que el analizador de Markdown de Streamlit
+            # interprete el texto con espacios iniciales como un bloque de código.
+            clean_timeline_html = "\n".join([line.strip() for line in timeline_html.split("\n")])
+            st.markdown(clean_timeline_html, unsafe_allow_html=True)
         else:
             st.info("ℹ️ No hay datos de lanzamientos para el período seleccionado.")
