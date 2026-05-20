@@ -1,0 +1,15 @@
+[
+    {"year": 2012, "gaming": 70.6, "box_office": 34.7, "recorded_music": 16.5, "streaming_video": 5.0},
+    {"year": 2013, "gaming": 75.5, "box_office": 36.4, "recorded_music": 15.0, "streaming_video": 8.0},
+    {"year": 2014, "gaming": 81.5, "box_office": 36.4, "recorded_music": 14.3, "streaming_video": 12.0},
+    {"year": 2015, "gaming": 91.5, "box_office": 38.3, "recorded_music": 15.0, "streaming_video": 18.0},
+    {"year": 2016, "gaming": 99.6, "box_office": 38.6, "recorded_music": 15.7, "streaming_video": 24.0},
+    {"year": 2017, "gaming": 108.9, "box_office": 40.5, "recorded_music": 17.3, "streaming_video": 32.0},
+    {"year": 2018, "gaming": 134.9, "box_office": 41.7, "recorded_music": 19.1, "streaming_video": 42.0},
+    {"year": 2019, "gaming": 145.7, "box_office": 42.5, "recorded_music": 20.2, "streaming_video": 50.0},
+    {"year": 2020, "gaming": 177.8, "box_office": 12.0, "recorded_music": 21.6, "streaming_video": 62.0},
+    {"year": 2021, "gaming": 192.7, "box_office": 21.3, "recorded_music": 25.9, "streaming_video": 72.0},
+    {"year": 2022, "gaming": 184.4, "box_office": 26.2, "recorded_music": 26.2, "streaming_video": 80.0},
+    {"year": 2023, "gaming": 184.0, "box_office": 33.9, "recorded_music": 28.6, "streaming_video": 87.0},
+    {"year": 2024, "gaming": 187.7, "box_office": 33.5, "recorded_music": 29.6, "streaming_video": 95.0}
+]

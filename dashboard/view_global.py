@@ -1,13 +1,30 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
+import json
 import config
 from pathlib import Path
 from model_corporate import get_all_games_data
 from charts_corporate import create_genre_and_score_chart
-import plotly.express as px
+from charts_global import create_intersectoral_chart, create_genre_race_chart
 
-def get_genre_evolution_data(df):
+def get_industry_comparison_data() -> pd.DataFrame:
+    """
+    Carga los datos estáticos de comparación de industrias desde el JSON configurado.
+    """
+    json_path = Path(config.ROOT_DIR) / "config_data" / "industry_comparison.json"
+    if not json_path.exists():
+        return pd.DataFrame()
+    
+    try:
+        with open(json_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return pd.DataFrame(data)
+    except Exception as e:
+        config.get_logger("view_global").error(f"Error al cargar datos intersectoriales: {e}")
+        return pd.DataFrame()
+
+def get_genre_evolution_data(df: pd.DataFrame) -> pd.DataFrame:
     """
     Procesa el catálogo de juegos para obtener la evolución anual por género.
     Explota los géneros separados por coma y los cuenta por año.
@@ -34,12 +51,54 @@ def get_genre_evolution_data(df):
     
     return df_grouped
 
-def create_genre_evolution_chart(df_grouped):
+def get_genre_race_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Procesa el catálogo de juegos para obtener el acumulado de lanzamientos año a año por género,
+    listo para el Bar Chart Race animado. Rellena huecos con 0 para una animación fluida.
+    """
+    if 'genres' not in df.columns or 'release_year' not in df.columns:
+        return pd.DataFrame()
+        
+    df_clean = df.copy()
+    df_clean = df_clean.dropna(subset=['release_year', 'genres'])
+    df_clean = df_clean[df_clean['genres'] != '']
+    df_clean = df_clean[df_clean['genres'] != 'Desconocido']
+    
+    df_clean['Genre_List'] = df_clean['genres'].astype(str).str.split(', ')
+    df_exploded = df_clean.explode('Genre_List')
+    
+    # Agrupamos por año y género
+    df_grouped = df_exploded.groupby(['release_year', 'Genre_List']).size().reset_index(name='Game_Count')
+    df_grouped.rename(columns={'release_year': 'Año', 'Genre_List': 'Género'}, inplace=True)
+    
+    # Rango de años válidos para el gráfico animado
+    min_year = 1990
+    max_year = 2026
+    df_grouped = df_grouped[(df_grouped['Año'] >= min_year) & (df_grouped['Año'] <= max_year)]
+    
+    if df_grouped.empty:
+        return pd.DataFrame()
+        
+    # Crear un producto cartesiano de Años x Géneros para no tener saltos de frames
+    all_years = range(min_year, max_year + 1)
+    all_genres = df_grouped['Género'].unique()
+    idx = pd.MultiIndex.from_product([all_years, all_genres], names=['Año', 'Género'])
+    
+    df_filled = df_grouped.set_index(['Año', 'Género']).reindex(idx, fill_value=0).reset_index()
+    
+    # Calcular la suma acumulada por género
+    df_filled = df_filled.sort_values(by=['Género', 'Año'])
+    df_filled['Acumulado'] = df_filled.groupby('Género')['Game_Count'].cumsum()
+    
+    return df_filled
+
+def create_genre_evolution_chart(df_grouped: pd.DataFrame):
     if df_grouped.empty:
         return None
         
     df_grouped = df_grouped.sort_values(by='Año')
     
+    import plotly.express as px
     fig = px.area(
         df_grouped,
         x='Año',
@@ -75,8 +134,8 @@ def create_genre_evolution_chart(df_grouped):
 def render_global_vision_module():
     st.title("🌍 Visión Global de la Industria")
     st.markdown("""
-    Esta dimensión ofrece una perspectiva histórica y estratégica del mercado de los videojuegos. 
-    Analizamos la evolución de los géneros a lo largo de las décadas y la especialización productiva general.
+    Esta dimensión ofrece una perspectiva histórica, estratégica y macroeconómica del mercado de los videojuegos. 
+    Analizamos desde su posición comparativa frente a otros sectores del entretenimiento hasta la evolución de sus géneros principales.
     """)
     
     df_games_all = get_all_games_data()
@@ -85,11 +144,29 @@ def render_global_vision_module():
         st.warning("⚠️ No se encontraron juegos en la base de datos. Por favor, ejecuta el pipeline primero.")
         return
         
-    # --- Capítulo 1: La Evolución de los Géneros ---
-    st.subheader("Capítulo 1: La Evolución de los Géneros")
+    # --- Capítulo 1: Comparativa Intersectorial (Macro Industria) ---
+    st.subheader("Capítulo 1: El Gigante del Entretenimiento")
     st.markdown("""
-    El gráfico de áreas acumuladas (Stacked Area Chart) ilustra cómo han cambiado las preferencias de desarrollo 
-    y los lanzamientos por género desde 1980 hasta la actualidad. 
+    Esta visualización pone en perspectiva el tamaño de la industria global del videojuego en comparación con otros 
+    grandes pilares del entretenimiento: la taquilla de cine (Box Office), la música grabada y el streaming de vídeo (OTT). 
+    Los ingresos están expresados en miles de millones de dólares (USD Bn).
+    """)
+    
+    df_industry = get_industry_comparison_data()
+    if not df_industry.empty:
+        fig_intersectoral = create_intersectoral_chart(df_industry)
+        st.plotly_chart(fig_intersectoral, use_container_width=True)
+        st.info("💡 **Dato Clave**: La industria del videojuego experimentó un crecimiento sin precedentes a partir del año 2020 debido al confinamiento global, consolidando su posición como la mayor industria de entretenimiento del planeta, superando con creces al cine y la música combinados.")
+    else:
+        st.info("ℹ️ No se pudieron cargar los datos de comparación intersectorial.")
+        
+    st.markdown("<br><hr style='border: 1px solid rgba(255,255,255,0.1);'><br>", unsafe_allow_html=True)
+    
+    # --- Capítulo 2: La Evolución Histórica de los Géneros ---
+    st.subheader("Capítulo 2: La Evolución Histórica de los Géneros")
+    st.markdown("""
+    El gráfico de áreas acumuladas (Stacked Area Chart) ilustra cómo han cambiado las tendencias de desarrollo 
+    y la oferta de lanzamientos por género desde 1980 hasta la actualidad.
     *Tip: Haz doble clic en un género en la leyenda para aislarlo, o un solo clic para desactivarlo.*
     """)
     
@@ -103,12 +180,12 @@ def render_global_vision_module():
         
     st.markdown("<br><hr style='border: 1px solid rgba(255,255,255,0.1);'><br>", unsafe_allow_html=True)
         
-    # --- Capítulo 2: Matriz de Portfolio Global ---
-    st.subheader("Capítulo 2: Matriz de Portfolio Global")
+    # --- Capítulo 3: Matriz de Portfolio Global ---
+    st.subheader("Capítulo 3: Matriz de Portfolio Global")
     st.markdown("""
-    Analizamos la relación entre el **volumen de producción** (cantidad de títulos) y la **calidad media por género** (Metacritic). 
+    Analizamos la relación entre el **volumen de producción** (cantidad de títulos) y la **calidad crítica media por género** (Metacritic). 
     El tamaño de las burbujas es proporcional al volumen total de títulos.
-    Las zonas superiores representan géneros de alta calidad (aclamación crítica), mientras que el eje horizontal muestra la popularidad comercial o volumen.
+    Las zonas superiores representan géneros con alta aclamación crítica, mientras que el eje horizontal muestra el volumen de oferta comercial.
     """)
     
     fig_portfolio = create_genre_and_score_chart(df_games_all)
@@ -117,3 +194,19 @@ def render_global_vision_module():
         st.plotly_chart(fig_portfolio, use_container_width=True)
     else:
         st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")
+        
+    st.markdown("<br><hr style='border: 1px solid rgba(255,255,255,0.1);'><br>", unsafe_allow_html=True)
+
+    # --- Capítulo 4: Carrera de los Géneros (Bar Chart Race) ---
+    st.subheader("Capítulo 4: La Carrera por el Dominio (Bar Chart Race)")
+    st.markdown("""
+    Esta simulación animada interactiva muestra cómo los diferentes géneros han competido por el volumen total acumulado de títulos desde 1990 hasta hoy. 
+    Observa cómo el ascenso tecnológico y de audiencias ha impulsado a géneros específicos en momentos clave de la historia.
+    """)
+    
+    df_race = get_genre_race_data(df_games_all)
+    if not df_race.empty:
+        fig_race = create_genre_race_chart(df_race)
+        st.plotly_chart(fig_race, use_container_width=True)
+    else:
+        st.info("ℹ️ No hay datos suficientes para animar la carrera de géneros.")

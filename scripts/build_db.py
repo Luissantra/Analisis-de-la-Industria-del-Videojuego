@@ -10,6 +10,7 @@ if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 import config
+from scripts.etl_vgchartz import run_vgchartz_etl
 
 log = config.get_logger("build_db")
 
@@ -197,6 +198,12 @@ def build_database():
         connection.execute(text("CREATE INDEX IF NOT EXISTS idx_games_year ON games(release_year);"))
 
     log.info("Capa semántica consolidada exitosamente.")
+
+    # Ejecutar el ETL de VGChartz de manera automática para incorporar los datos de ventas
+    try:
+        run_vgchartz_etl()
+    except Exception as e:
+        log.error(f"Error al ejecutar el ETL de VGChartz durante la construcción de la base de datos: {e}")
 
 if __name__ == "__main__":
     build_database()
