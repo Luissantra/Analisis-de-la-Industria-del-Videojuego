@@ -33,6 +33,7 @@ def infer_manufacturer(name):
     if any(x in name_l for x in ['pc', 'windows', 'linux']): return 'PC'
     if 'android' in name_l: return 'Google'
     if any(x in name_l for x in ['commodore', 'amiga']): return 'Commodore'
+    if any(x in name_l for x in ['neo geo', 'snk']): return 'SNK'
     return 'Other'
 
 def run_platforms_etl():
@@ -116,6 +117,7 @@ def run_platforms_etl():
             "units_sold_millions": manual_info.get('units_sold_millions'),
             "games_count": rp.get('games_count', 0),
             "generation": manual_info.get('generation', 'Desconocida / Software'),
+            "form_factor": manual_info.get('form_factor', 'home'),
             "local_image": local_image,
             "rawg_image": rp.get("image_background")
         })

@@ -1,27 +1,254 @@
 [
-  {"name": "NES", "manufacturer": "Nintendo", "release_year": 1983, "units_sold_millions": 61.91, "generation": "3ra Gen", "wiki_image": "NES-Console-Set.png"},
-  {"name": "Super Nintendo", "manufacturer": "Nintendo", "release_year": 1990, "units_sold_millions": 49.10, "generation": "4ta Gen", "wiki_image": "SNES-Mod1-Console-Set.png"},
-  {"name": "Nintendo 64", "manufacturer": "Nintendo", "release_year": 1996, "units_sold_millions": 32.93, "generation": "5ta Gen", "wiki_image": "Nintendo-64-wController-L.png"},
-  {"name": "GameCube", "manufacturer": "Nintendo", "release_year": 2001, "units_sold_millions": 21.74, "generation": "6ta Gen", "wiki_image": "GameCube-Console-Set.png"},
-  {"name": "Wii", "manufacturer": "Nintendo", "release_year": 2006, "units_sold_millions": 101.63, "generation": "7ma Gen", "wiki_image": "Wii-console.png"},
-  {"name": "Nintendo Switch", "manufacturer": "Nintendo", "release_year": 2017, "units_sold_millions": 141.32, "generation": "8va/9na Gen", "wiki_image": "Nintendo-Switch-wJoyCons-BlRd-Standing-FL.png"},
-  {"name": "PlayStation", "manufacturer": "Sony", "release_year": 1994, "units_sold_millions": 102.49, "generation": "5ta Gen", "wiki_image": "PSX-Console-wController.png"},
-  {"name": "PlayStation 2", "manufacturer": "Sony", "release_year": 2000, "units_sold_millions": 155.00, "generation": "6ta Gen", "wiki_image": "Sony-PlayStation-2-40001-Console-FL.png"},
-  {"name": "PlayStation 3", "manufacturer": "Sony", "release_year": 2006, "units_sold_millions": 87.40, "generation": "7ma Gen", "wiki_image": "Sony-PlayStation-3-CECHA01-wController-L.png"},
-  {"name": "PlayStation 4", "manufacturer": "Sony", "release_year": 2013, "units_sold_millions": 117.20, "generation": "8va Gen", "wiki_image": "Sony-PlayStation-4-wController.png"},
-  {"name": "PlayStation 5", "manufacturer": "Sony", "release_year": 2020, "units_sold_millions": 59.30, "generation": "9na Gen", "wiki_image": "PlayStation_5_and_DualSense_with_transparent_background.png"},
-  {"name": "Xbox", "manufacturer": "Microsoft", "release_year": 2001, "units_sold_millions": 24.00, "generation": "6ta Gen", "wiki_image": "Xbox-Console-wDuke-L.png"},
-  {"name": "Xbox 360", "manufacturer": "Microsoft", "release_year": 2005, "units_sold_millions": 84.00, "generation": "7ma Gen", "wiki_image": "Xbox-360-Pro-wController-L.png"},
-  {"name": "Xbox One", "manufacturer": "Microsoft", "release_year": 2013, "units_sold_millions": 58.00, "generation": "8va Gen", "wiki_image": "Xbox-One-Console-wController-L.png"},
-  {"name": "Xbox Series S/X", "manufacturer": "Microsoft", "release_year": 2020, "units_sold_millions": 28.30, "generation": "9na Gen", "wiki_image": "Xbox_Series_X_and_Series_S.png"},
-  {"name": "Sega Genesis (Mega Drive)", "manufacturer": "Sega", "release_year": 1988, "units_sold_millions": 30.75, "generation": "4ta Gen", "wiki_image": "Sega-Genesis-Mk2-6button.png"},
-  {"name": "Game Boy", "manufacturer": "Nintendo", "release_year": 1989, "units_sold_millions": 118.69, "generation": "4ta Gen", "wiki_image": "Game-Boy-FL.png"},
-  {"name": "Game Boy Advance", "manufacturer": "Nintendo", "release_year": 2001, "units_sold_millions": 81.51, "generation": "6ta Gen", "wiki_image": "Nintendo-Game-Boy-Advance-Purple-FL.png"},
-  {"name": "Nintendo DS", "manufacturer": "Nintendo", "release_year": 2004, "units_sold_millions": 154.02, "generation": "7ma Gen", "wiki_image": "Nintendo-DS-Lite-Black-Open.png"},
-  {"name": "Nintendo 3DS", "manufacturer": "Nintendo", "release_year": 2011, "units_sold_millions": 75.94, "generation": "8va Gen", "wiki_image": "Nintendo-3DS-AquaOpen.png"},
-  {"name": "Wii U", "manufacturer": "Nintendo", "release_year": 2012, "units_sold_millions": 13.56, "generation": "8va Gen", "wiki_image": "Wii_U_Console_and_Gamepad.png"},
-  {"name": "PSP", "manufacturer": "Sony", "release_year": 2004, "units_sold_millions": 80.00, "generation": "7ma Gen", "wiki_image": "Sony-PSP-1000-Body.png"},
-  {"name": "PS Vita", "manufacturer": "Sony", "release_year": 2011, "units_sold_millions": 15.00, "generation": "8va Gen", "wiki_image": "PlayStation-Vita-1101-FL.png"},
-  {"name": "Sega Saturn", "manufacturer": "Sega", "release_year": 1994, "units_sold_millions": 9.26, "generation": "5ta Gen", "wiki_image": "Sega-Saturn-Console-Set-Mk1.png"},
-  {"name": "Dreamcast", "manufacturer": "Sega", "release_year": 1998, "units_sold_millions": 9.13, "generation": "6ta Gen", "wiki_image": "Dreamcast-Console-Set.png"}
+  {
+    "name": "NES",
+    "manufacturer": "Nintendo",
+    "release_year": 1983,
+    "units_sold_millions": 61.91,
+    "generation": "3ra Gen",
+    "wiki_image": "NES-Console-Set.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Super Nintendo",
+    "manufacturer": "Nintendo",
+    "release_year": 1990,
+    "units_sold_millions": 49.1,
+    "generation": "4ta Gen",
+    "wiki_image": "SNES-Mod1-Console-Set.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Nintendo 64",
+    "manufacturer": "Nintendo",
+    "release_year": 1996,
+    "units_sold_millions": 32.93,
+    "generation": "5ta Gen",
+    "wiki_image": "Nintendo-64-wController-L.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "GameCube",
+    "manufacturer": "Nintendo",
+    "release_year": 2001,
+    "units_sold_millions": 21.74,
+    "generation": "6ta Gen",
+    "wiki_image": "GameCube-Console-Set.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Wii",
+    "manufacturer": "Nintendo",
+    "release_year": 2006,
+    "units_sold_millions": 101.63,
+    "generation": "7ma Gen",
+    "wiki_image": "Wii-console.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Nintendo Switch",
+    "manufacturer": "Nintendo",
+    "release_year": 2017,
+    "units_sold_millions": 141.32,
+    "generation": "8va Gen",
+    "wiki_image": "Nintendo-Switch-wJoyCons-BlRd-Standing-FL.png",
+    "form_factor": "portable"
+  },
+  {
+    "name": "PlayStation",
+    "manufacturer": "Sony",
+    "release_year": 1994,
+    "units_sold_millions": 102.49,
+    "generation": "5ta Gen",
+    "wiki_image": "PSX-Console-wController.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "PlayStation 2",
+    "manufacturer": "Sony",
+    "release_year": 2000,
+    "units_sold_millions": 155.0,
+    "generation": "6ta Gen",
+    "wiki_image": "Sony-PlayStation-2-40001-Console-FL.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "PlayStation 3",
+    "manufacturer": "Sony",
+    "release_year": 2006,
+    "units_sold_millions": 87.4,
+    "generation": "7ma Gen",
+    "wiki_image": "Sony-PlayStation-3-CECHA01-wController-L.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "PlayStation 4",
+    "manufacturer": "Sony",
+    "release_year": 2013,
+    "units_sold_millions": 117.2,
+    "generation": "8va Gen",
+    "wiki_image": "Sony-PlayStation-4-wController.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "PlayStation 5",
+    "manufacturer": "Sony",
+    "release_year": 2020,
+    "units_sold_millions": 59.3,
+    "generation": "9na Gen",
+    "wiki_image": "PlayStation_5_and_DualSense_with_transparent_background.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Xbox",
+    "manufacturer": "Microsoft",
+    "release_year": 2001,
+    "units_sold_millions": 24.0,
+    "generation": "6ta Gen",
+    "wiki_image": "Xbox-Console-wDuke-L.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Xbox 360",
+    "manufacturer": "Microsoft",
+    "release_year": 2005,
+    "units_sold_millions": 84.0,
+    "generation": "7ma Gen",
+    "wiki_image": "Xbox-360-Pro-wController-L.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Xbox One",
+    "manufacturer": "Microsoft",
+    "release_year": 2013,
+    "units_sold_millions": 58.0,
+    "generation": "8va Gen",
+    "wiki_image": "Xbox-One-Console-wController-L.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Xbox Series S/X",
+    "manufacturer": "Microsoft",
+    "release_year": 2020,
+    "units_sold_millions": 28.3,
+    "generation": "9na Gen",
+    "wiki_image": "Xbox_Series_X_and_Series_S.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Sega Genesis (Mega Drive)",
+    "manufacturer": "Sega",
+    "release_year": 1988,
+    "units_sold_millions": 30.75,
+    "generation": "4ta Gen",
+    "wiki_image": "Sega-Genesis-Mk2-6button.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Game Boy",
+    "manufacturer": "Nintendo",
+    "release_year": 1989,
+    "units_sold_millions": 118.69,
+    "generation": "4ta Gen",
+    "wiki_image": "Game-Boy-FL.png",
+    "form_factor": "portable"
+  },
+  {
+    "name": "Game Boy Advance",
+    "manufacturer": "Nintendo",
+    "release_year": 2001,
+    "units_sold_millions": 81.51,
+    "generation": "6ta Gen",
+    "wiki_image": "Nintendo-Game-Boy-Advance-Purple-FL.png",
+    "form_factor": "portable"
+  },
+  {
+    "name": "Nintendo DS",
+    "manufacturer": "Nintendo",
+    "release_year": 2004,
+    "units_sold_millions": 154.02,
+    "generation": "7ma Gen",
+    "wiki_image": "Nintendo-DS-Lite-Black-Open.png",
+    "form_factor": "portable"
+  },
+  {
+    "name": "Nintendo 3DS",
+    "manufacturer": "Nintendo",
+    "release_year": 2011,
+    "units_sold_millions": 75.94,
+    "generation": "8va Gen",
+    "wiki_image": "Nintendo-3DS-AquaOpen.png",
+    "form_factor": "portable"
+  },
+  {
+    "name": "Wii U",
+    "manufacturer": "Nintendo",
+    "release_year": 2012,
+    "units_sold_millions": 13.56,
+    "generation": "8va Gen",
+    "wiki_image": "Wii_U_Console_and_Gamepad.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "PSP",
+    "manufacturer": "Sony",
+    "release_year": 2004,
+    "units_sold_millions": 80.0,
+    "generation": "7ma Gen",
+    "wiki_image": "Sony-PSP-1000-Body.png",
+    "form_factor": "portable"
+  },
+  {
+    "name": "PS Vita",
+    "manufacturer": "Sony",
+    "release_year": 2011,
+    "units_sold_millions": 15.0,
+    "generation": "8va Gen",
+    "wiki_image": "PlayStation-Vita-1101-FL.png",
+    "form_factor": "portable"
+  },
+  {
+    "name": "Sega Saturn",
+    "manufacturer": "Sega",
+    "release_year": 1994,
+    "units_sold_millions": 9.26,
+    "generation": "5ta Gen",
+    "wiki_image": "Sega-Saturn-Console-Set-Mk1.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Dreamcast",
+    "manufacturer": "Sega",
+    "release_year": 1998,
+    "units_sold_millions": 9.13,
+    "generation": "6ta Gen",
+    "wiki_image": "Dreamcast-Console-Set.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Atari 2600",
+    "manufacturer": "Atari",
+    "release_year": 1977,
+    "units_sold_millions": 30.0,
+    "generation": "2da Gen",
+    "wiki_image": "Atari-2600-Wood-4Sw-Set.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "SEGA Master System",
+    "manufacturer": "Sega",
+    "release_year": 1986,
+    "units_sold_millions": 13.0,
+    "generation": "3ra Gen",
+    "wiki_image": "Sega-Master-System-Set.png",
+    "form_factor": "home"
+  },
+  {
+    "name": "Neo Geo",
+    "manufacturer": "SNK",
+    "release_year": 1990,
+    "units_sold_millions": 1.0,
+    "generation": "4ta Gen",
+    "wiki_image": "Neo-Geo-AES-Console-Set.png",
+    "form_factor": "home"
+  }
 ]

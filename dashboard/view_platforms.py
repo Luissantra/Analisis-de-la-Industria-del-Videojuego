@@ -4,13 +4,30 @@ import sqlite3
 import base64
 from pathlib import Path
 import config
-from charts_platforms import create_roadmap_timeline, PLATFORM_COLORS
+from charts_platforms import (
+    create_roadmap_timeline, 
+    PLATFORM_COLORS, 
+    create_sales_ranking_chart,
+    create_generation_market_share_chart,
+    create_catalog_distribution_chart
+)
 
 @st.cache_data(show_spinner="Cargando plataformas...")
 def load_platforms_data():
+    # Cache busted on 2026-05-20 v3
     try:
         conn = sqlite3.connect(config.DATABASE_PATH)
         df = pd.read_sql_query("SELECT * FROM platforms", conn)
+        conn.close()
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+@st.cache_data(show_spinner="Cargando catálogo...")
+def load_games_platforms_data():
+    try:
+        conn = sqlite3.connect(config.DATABASE_PATH)
+        df = pd.read_sql_query("SELECT platforms FROM games WHERE platforms IS NOT NULL", conn)
         conn.close()
         return df
     except Exception:
@@ -25,57 +42,90 @@ def render_platforms_module():
         st.warning("⚠️ No se encontraron datos. Ejecuta primero 'python scripts/etl_platforms.py'")
         return
 
-    # KPIs Agregados Superiores
-    total_consolas = len(df_platforms)
-    ventas_totales = df_platforms['units_sold_millions'].sum()
-    df_sorted_sales = df_platforms.sort_values(by='units_sold_millions', ascending=False)
-    top_consola = df_sorted_sales.iloc[0]['name'] if not df_sorted_sales.empty else "N/A"
+    # Sidebar Filtros
+    st.sidebar.header("Filtros de Plataformas")
     
-    col1, col2, col3 = st.columns(3)
+    fabricantes = sorted(df_platforms['manufacturer'].unique())
+    selected_fabricantes = st.sidebar.multiselect("Fabricante:", fabricantes, default=fabricantes)
+    
+    generaciones = sorted(df_platforms['generation'].unique())
+    selected_generaciones = st.sidebar.multiselect("Generación:", generaciones, default=generaciones)
+    
+    form_filter = st.sidebar.radio("Factor de forma:", ["Todas", "Sobremesa", "Portátiles"], horizontal=True)
+    st.sidebar.info("💡 **Nota:** Estos filtros afectan a los Capítulos 1, 2 y a la Ficha Técnica. El Capítulo 3 (Catálogo Global) es independiente para mostrar el contexto completo de la industria.")
+
+    # Filtrar datos
+    df_filtered = df_platforms[
+        (df_platforms['manufacturer'].isin(selected_fabricantes)) &
+        (df_platforms['generation'].isin(selected_generaciones))
+    ].copy()
+    
+    if form_filter == "Sobremesa":
+        if 'form_factor' in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered['form_factor'] == 'home']
+    elif form_filter == "Portátiles":
+        if 'form_factor' in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered['form_factor'] == 'portable']
+
+    if df_filtered.empty:
+        st.warning("⚠️ No hay plataformas con los filtros seleccionados.")
+        return
+
+    # KPIs Agregados Superiores (Dinámicos)
+    total_consolas = len(df_filtered)
+    ventas_totales = df_filtered['units_sold_millions'].sum()
+    df_sorted_sales = df_filtered.sort_values(by='units_sold_millions', ascending=False)
+    top_consola = df_sorted_sales.iloc[0]['name'] if not df_sorted_sales.empty else "N/A"
+    total_catalogo = df_filtered['games_count'].sum() if 'games_count' in df_filtered.columns else 0
+    
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Plataformas Rastreadas", f"{total_consolas}")
+        st.metric("Total Plataformas", f"{total_consolas}")
     with col2:
-        st.metric("Ventas Globales Estimadas", f"{ventas_totales:,.0f} Millones")
+        st.metric("Ventas Totales", f"{ventas_totales:,.1f} M")
     with col3:
-        st.metric("Plataforma Más Vendida", top_consola)
+        st.metric("Consola Más Vendida", top_consola)
+    with col4:
+        st.metric("Catálogo Total (Juegos)", f"{total_catalogo:,.0f}")
         
     st.divider()
 
-    st.markdown("### Línea de Tiempo Histórica")
-    fig = create_roadmap_timeline(df_platforms)
-    
-    # Capturamos clics en el gráfico
-    evento = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
+    # Capítulo 1
+    st.markdown("### 📖 Capítulo 1: El Campo de Batalla")
+    st.markdown("Cada carril representa un fabricante. El tamaño de los puntos indica el éxito comercial.")
+    fig_roadmap = create_roadmap_timeline(df_filtered)
+    evento = st.plotly_chart(fig_roadmap, use_container_width=True, on_select="rerun")
     
     st.divider()
     
+    # Capítulo 4 (Detalle On-click reubicado aquí)
     # Si el usuario hace clic en una consola
     if evento and "selection" in evento and evento["selection"].get("points"):
         punto = evento["selection"]["points"][0]
         nombre_consola = punto["customdata"][0]
         
-        # Filtramos los datos de esa consola específica
-        consola_data = df_platforms[df_platforms['name'] == nombre_consola].iloc[0]
+        consola_data = df_filtered[df_filtered['name'] == nombre_consola].iloc[0]
         color_marca = PLATFORM_COLORS.get(consola_data['manufacturer'], "white")
         
-        c1, c2 = st.columns([1, 1.5])
+        # Panel expandido mejorado
+        st.markdown(f"### 🔍 Detalle: {nombre_consola}")
+        
+        c1, c2, c3 = st.columns([1, 1.5, 1])
         
         with c1:
-            # Validamos que tengamos nombre de imagen y no sea nulo (NaN)
             img_name = consola_data['local_image']
+            
             if pd.notna(img_name) and bool(img_name):
-                # Usar config.CONSOLES_DIR si existe, si no, construir la ruta localmente para evitar problemas de caché de Streamlit
                 consoles_dir = getattr(config, 'CONSOLES_DIR', Path(__file__).resolve().parent / "assets" / "consoles")
                 img_path = consoles_dir / str(img_name)
                 if img_path.exists():
-                    # Mostramos la imagen con el logo o render 3D de la consola
                     with open(img_path, "rb") as img_file:
                         encoded = base64.b64encode(img_file.read()).decode()
                     st.markdown(f'<div style="text-align:center; padding: 20px; background-color: rgba(255,255,255,0.05); border-radius: 15px;"><img src="data:image/png;base64,{encoded}" style="max-width: 100%; max-height: 250px; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));"></div>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div style="text-align:center; padding: 60px 20px; background-color: rgba(255,255,255,0.02); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1);"><h1 style="color: rgba(255,255,255,0.2); font-size: 80px; margin:0;">🎮</h1><p style="color: rgba(255,255,255,0.3); font-style: italic;">Sin imagen en archivo</p></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div style="text-align:center; padding: 60px 20px; background-color: rgba(255,255,255,0.02); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1);"><h1 style="color: rgba(255,255,255,0.2); font-size: 80px; margin:0;">🎮</h1><p style="color: rgba(255,255,255,0.3); font-style: italic;">Sin imagen disponible</p></div>', unsafe_allow_html=True)
             else:
-                st.markdown(f'<div style="text-align:center; padding: 60px 20px; background-color: rgba(255,255,255,0.02); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1);"><h1 style="color: rgba(255,255,255,0.2); font-size: 80px; margin:0;">🎮</h1><p style="color: rgba(255,255,255,0.3); font-style: italic;">Sin imagen en archivo</p></div>', unsafe_allow_html=True)
+                st.markdown(f'<div style="text-align:center; padding: 60px 20px; background-color: rgba(255,255,255,0.02); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1);"><h1 style="color: rgba(255,255,255,0.2); font-size: 80px; margin:0;">🎮</h1><p style="color: rgba(255,255,255,0.3); font-style: italic;">Sin imagen disponible</p></div>', unsafe_allow_html=True)
                 
         with c2:
             st.markdown(f"<h2 style='color:{color_marca};'>{consola_data['name']}</h2>", unsafe_allow_html=True)
@@ -83,8 +133,64 @@ def render_platforms_module():
             st.markdown(f"**Lanzamiento:** {consola_data['release_year']}")
             st.markdown(f"**Generación:** {consola_data['generation']}")
             
+            # Progress bar visual para ventas
             ventas = consola_data['units_sold_millions']
-            ventas_str = f"{ventas} Millones" if pd.notna(ventas) and ventas > 0 else "N/A"
-            st.metric("Ventas Totales", ventas_str)
+            ventas_str = f"{ventas} M" if pd.notna(ventas) and ventas > 0 else "N/A"
+            max_ventas_historico = 155.0 # PS2
+            pct = min(100, int((ventas / max_ventas_historico) * 100)) if pd.notna(ventas) else 0
+            
+            st.markdown(f"**Ventas Totales:** {ventas_str}")
+            st.markdown(
+                f"""
+                <div style="width: 100%; background-color: rgba(255,255,255,0.1); border-radius: 5px; height: 10px; margin-top: 5px;">
+                  <div style="width: {pct}%; background-color: {color_marca}; height: 100%; border-radius: 5px;"></div>
+                </div>
+                <div style="font-size: 11px; color: gray; margin-top: 5px;">Ventas vs PS2 (récord histórico)</div>
+                """, unsafe_allow_html=True
+            )
+            
+        with c3:
+            st.markdown("### Rendimiento Competitivo")
+            # Contexto competitivo
+            gen = consola_data['generation']
+            df_comp = df_platforms[df_platforms['generation'] == gen].sort_values("units_sold_millions", ascending=False)
+            rank = list(df_comp['name']).index(consola_data['name']) + 1 if consola_data['name'] in list(df_comp['name']) else "N/A"
+            total_in_gen = len(df_comp)
+            
+            st.metric("Posición en su Generación", f"#{rank} de {total_in_gen}")
+            
+            cat = consola_data.get('games_count', 0)
+            st.metric("Juegos en Catálogo", f"{cat:,.0f}")
+            
+            if cat > 0 and pd.notna(ventas) and ventas > 0:
+                ratio = (ventas * 1_000_000) / cat
+                st.metric("Ventas por Juego", f"{ratio:,.0f} unds")
     else:
         st.info("👆 Haz clic en cualquier consola en la línea de tiempo superior para ver sus detalles.")
+
+    st.divider()
+
+    # Capítulo 2
+    st.markdown("### 📖 Capítulo 2: La Guerra por Números")
+    st.markdown("¿Quién domina cada era? Visualiza el top histórico y la cuota de mercado por generación.")
+    c2_1, c2_2 = st.columns(2)
+    with c2_1:
+        fig_ranking = create_sales_ranking_chart(df_filtered)
+        st.plotly_chart(fig_ranking, use_container_width=True)
+    with c2_2:
+        fig_market_share = create_generation_market_share_chart(df_filtered)
+        st.plotly_chart(fig_market_share, use_container_width=True)
+
+    st.divider()
+
+    # Capítulo 3
+    st.markdown("### 📖 Capítulo 3: El Poder del Catálogo")
+    st.markdown("El tamaño del ecosistema de juegos es tan importante como las ventas de hardware.")
+    st.info("💡 **Contexto:** En esta métrica se incluye PC, que aunque no es una consola con ciclo de vida definido, domina masivamente el volumen de catálogo global.")
+    
+    df_games_platforms = load_games_platforms_data()
+    if not df_games_platforms.empty:
+        fig_catalog = create_catalog_distribution_chart(df_games_platforms)
+        st.plotly_chart(fig_catalog, use_container_width=True)
+    else:
+        st.warning("⚠️ No se encontraron datos de catálogo. Ejecuta primero 'python scripts/etl_games_rawg.py'")
