@@ -4,7 +4,7 @@ import base64
 import sqlite3
 import config
 from pathlib import Path
-from charts_corporate import create_sunburst_chart, create_treemap_chart, create_genre_and_score_chart, create_genre_pie_chart, create_acquisition_timeline_chart, create_score_distribution_chart, create_esrb_distribution_chart, create_playtime_scatter_chart, PARENT_COLOR_MAP
+from charts_corporate import create_sunburst_chart, create_treemap_chart, create_genre_and_score_chart, create_genre_pie_chart, create_acquisition_timeline_chart, create_score_distribution_chart, PARENT_COLOR_MAP
 from model_corporate import get_all_corporate_data, get_conglomerate_data, get_all_games_data
 
 # Nombres abreviados para evitar saltos de línea en las tarjetas
@@ -168,19 +168,6 @@ def render_corporate_module():
             st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")
 
         st.divider()
-        
-        st.markdown("### 👥 Capítulo 4: Psicografía y Audiencia Global")
-        st.markdown("""
-        ¿A quién venden los gigantes? La distribución por edades (ESRB) y el tiempo de juego medio nos dan pistas sobre 
-        la estrategia de retención de cada compañía.
-        """)
-        col_esrb, col_play = st.columns(2)
-        with col_esrb:
-            fig_esrb = create_esrb_distribution_chart(df_games_all)
-            if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
-        with col_play:
-            fig_play = create_playtime_scatter_chart(df_games_all)
-            if fig_play: st.plotly_chart(fig_play, use_container_width=True)
     else:
         st.subheader(f"🔍 Análisis Estructural: {seleccion}")
         df_filtrado = get_conglomerate_data(seleccion)
@@ -250,32 +237,18 @@ def render_corporate_module():
             st.markdown("##### 🎭 Diversificación por Género")
             st.plotly_chart(fig_pie, use_container_width=True)
 
-        st.write("---")
-        st.markdown("### 👥 Capítulo 3: Audiencia y Engagement Específico")
-        st.markdown(f"¿A quién se dirige **{seleccion}**? Analizamos el perfil de edad y el tiempo de juego medio de sus producciones.")
-        
-        # Para el filtrado por conglomerado, necesitamos los juegos de ese conglomerado
+        # Para el top 10 necesitamos los juegos de ese conglomerado
         df_games_all = get_all_games_data()
         df_games_filt = df_games_all[df_games_all['conglomerate'] == seleccion]
-        
-        c_esrb, c_play = st.columns(2)
-        with c_esrb:
-            fig_esrb = create_esrb_distribution_chart(df_games_filt)
-            if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
-        with c_play:
-            fig_play = create_playtime_scatter_chart(df_games_filt)
-            if fig_play: st.plotly_chart(fig_play, use_container_width=True)
-            if df_games_filt.empty:
-                st.info("ℹ️ No hay suficientes datos de engagement para este conglomerado.")
 
         st.write("---")
-        st.markdown("### 🏆 Capítulo 4: Los 10 Títulos Más Aclamados")
+        st.markdown("### 🏆 Capítulo 3: Los 10 Títulos Más Aclamados")
         if not df_games_filt.empty:
             df_top_10 = df_games_filt.sort_values(by='metacritic', ascending=False).head(10)
-            df_top_10 = df_top_10[['title', 'developer', 'metacritic', 'release_date']]
+            df_top_10 = df_top_10[['title', 'studio', 'metacritic', 'release_date']]
             df_top_10.rename(columns={
                 'title': 'Título',
-                'developer': 'Desarrollador',
+                'studio': 'Desarrollador',
                 'metacritic': 'Metacritic',
                 'release_date': 'Lanzamiento'
             }, inplace=True)
