@@ -1,0 +1,112 @@
+[
+  {
+    "year": 2024,
+    "title": "Astro Bot",
+    "rawg_id": 984570,
+    "developer": "Team Asobi",
+    "publisher": "Sony Interactive Entertainment",
+    "metacritic": 94,
+    "genre": "Plataformas",
+    "description": "Una encantadora aventura espacial que celebra los 30 años de historia de PlayStation, llena de secretos, jugabilidad innovadora usando el DualSense y cameos nostálgicos."
+  },
+  {
+    "year": 2023,
+    "title": "Baldur's Gate 3",
+    "rawg_id": 324997,
+    "developer": "Larian Studios",
+    "publisher": "Larian Studios",
+    "metacritic": 96,
+    "genre": "Rol (RPG)",
+    "description": "Un RPG sin precedentes basado en Dungeons & Dragons, aclamado por su inmensa libertad de elección, narrativa ramificada y personajes inolvidables."
+  },
+  {
+    "year": 2022,
+    "title": "Elden Ring",
+    "rawg_id": 326243,
+    "developer": "FromSoftware",
+    "publisher": "Bandai Namco Entertainment",
+    "metacritic": 96,
+    "genre": "Acción / RPG",
+    "description": "Una obra maestra de mundo abierto que combina el desafiante combate de los Souls con un vasto y misterioso lore co-creado por George R.R. Martin."
+  },
+  {
+    "year": 2021,
+    "title": "It Takes Two",
+    "rawg_id": 455597,
+    "developer": "Hazelight Studios",
+    "publisher": "Electronic Arts (EA)",
+    "metacritic": 88,
+    "genre": "Plataformas / Co-op",
+    "description": "Una emotiva e ingeniosa aventura cooperativa obligatoria que reinventa sus mecánicas en cada nivel para reflejar las dificultades de una pareja en divorcio."
+  },
+  {
+    "year": 2020,
+    "title": "The Last of Us Part II",
+    "rawg_id": 51325,
+    "developer": "Naughty Dog",
+    "publisher": "Sony Interactive Entertainment",
+    "metacritic": 93,
+    "genre": "Acción-Aventura",
+    "description": "Una visceral e intensa historia de venganza y consecuencias morales que lleva al límite la narrativa y la fidelidad técnica en PlayStation."
+  },
+  {
+    "year": 2019,
+    "title": "Sekiro: Shadows Die Twice",
+    "rawg_id": 50734,
+    "developer": "FromSoftware",
+    "publisher": "Activision / Activision Blizzard",
+    "metacritic": 90,
+    "genre": "Acción-Aventura",
+    "description": "Un desafiante juego de acción táctica centrado en el sigilo y un preciso sistema de desvíos con katanas en el Japón del período Sengoku."
+  },
+  {
+    "year": 2018,
+    "title": "God of War",
+    "rawg_id": 58175,
+    "developer": "Santa Monica Studio",
+    "publisher": "Sony Interactive Entertainment",
+    "metacritic": 94,
+    "genre": "Acción-Aventura",
+    "description": "Una reinvención magistral de la saga que traslada a Kratos a la mitología nórdica, presentándonos una madura relación de padre e hijo grabada en un plano secuencia ininterrumpido."
+  },
+  {
+    "year": 2017,
+    "title": "The Legend of Zelda: Breath of the Wild",
+    "rawg_id": 22511,
+    "developer": "Nintendo EPD",
+    "publisher": "Nintendo",
+    "metacritic": 97,
+    "genre": "Aventura / Mundo Abierto",
+    "description": "Un hito revolucionario en el diseño de mundos abiertos que redefinió la exploración interactiva y la física en los videojuegos."
+  },
+  {
+    "year": 2016,
+    "title": "Overwatch",
+    "rawg_id": 28117,
+    "developer": "Blizzard Entertainment",
+    "publisher": "Microsoft Gaming (Xbox, ZeniMax, Activision Blizzard)",
+    "metacritic": 90,
+    "genre": "Shooter / Héroes",
+    "description": "Un vibrante y dinámico shooter táctico por equipos centrado en héroes que cautivó al mundo y cimentó el género del Hero Shooter competitivo."
+  },
+  {
+    "year": 2015,
+    "title": "The Witcher 3: Wild Hunt",
+    "rawg_id": 3328,
+    "developer": "CD Projekt Red",
+    "publisher": "CD Projekt",
+    "metacritic": 92,
+    "genre": "Rol (RPG)",
+    "description": "Uno de los RPGs narrativos más aclamados de todos los tiempos, con misiones secundarias soberbias y un mundo de fantasía oscura rico en detalles."
+  },
+  {
+    "year": 2014,
+    "title": "Dragon Age: Inquisition",
+    "rawg_id": 28559,
+    "developer": "BioWare",
+    "publisher": "Electronic Arts (EA)",
+    "metacritic": 86,
+    "genre": "Rol (RPG)",
+    "description": "Un inmenso viaje de rol fantástico donde lideramos la Inquisición para salvar al continente de Thedas de un desgarro en el cielo."
+  }
+]

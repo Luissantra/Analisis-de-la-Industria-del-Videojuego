@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import base64
+import os
+import json
 from pathlib import Path
 import config
 from charts_platforms import (
@@ -9,16 +11,35 @@ from charts_platforms import (
     PLATFORM_COLORS, 
     create_sales_ranking_chart,
     create_generation_market_share_chart,
-    create_catalog_distribution_chart
+    create_catalog_distribution_chart,
+    create_lifespan_gantt_chart
 )
+
 
 @st.cache_data(show_spinner="Cargando plataformas...")
 def load_platforms_data():
-    # Cache busted on 2026-05-20 v3
+    # Cache busted on 2026-05-20 v4
     try:
         conn = sqlite3.connect(config.DATABASE_PATH)
         df = pd.read_sql_query("SELECT * FROM platforms", conn)
         conn.close()
+        
+        # Cruzamos dinámicamente con platforms.json para obtener discontinued_year y form_factor
+        if os.path.exists(config.PLATFORMS_JSON):
+            with open(config.PLATFORMS_JSON, 'r', encoding='utf-8') as f:
+                json_data = json.load(f)
+            df_json = pd.DataFrame(json_data)[['name', 'discontinued_year', 'form_factor']]
+            
+            # Quitar duplicados
+            df_json = df_json.drop_duplicates(subset=['name'])
+            
+            # Limpiar columnas de la tabla de la BD si ya existían para evitar colisión en merge
+            for col in ['discontinued_year', 'form_factor']:
+                if col in df.columns:
+                    df = df.drop(columns=[col])
+                    
+            df = pd.merge(df, df_json, on='name', how='left')
+            
         return df
     except Exception:
         return pd.DataFrame()
@@ -92,9 +113,21 @@ def render_platforms_module():
 
     # Capítulo 1
     st.markdown("### 📖 Capítulo 1: El Campo de Batalla")
-    st.markdown("Cada carril representa un fabricante. El tamaño de los puntos indica el éxito comercial.")
-    fig_roadmap = create_roadmap_timeline(df_filtered)
-    evento = st.plotly_chart(fig_roadmap, use_container_width=True, on_select="rerun")
+    
+    tab_roadmap, tab_gantt = st.tabs(["🚀 Línea de Tiempo de Lanzamiento", "📅 Duración del Ciclo de Vida (Gantt)"])
+    
+    with tab_roadmap:
+        st.markdown("Cada carril representa un fabricante. El tamaño de los puntos indica el éxito comercial (ventas globales).")
+        fig_roadmap = create_roadmap_timeline(df_filtered)
+        evento = st.plotly_chart(fig_roadmap, use_container_width=True, on_select="rerun", key="roadmap_chart")
+        
+    with tab_gantt:
+        st.markdown("""
+        Esta visualización Gantt interactiva muestra el **ciclo de vida útil** de cada consola desde su lanzamiento 
+        hasta su descontinuación. Permite analizar el solapamiento comercial entre generaciones y la longevidad de cada plataforma.
+        """)
+        fig_gantt = create_lifespan_gantt_chart(df_filtered)
+        st.plotly_chart(fig_gantt, use_container_width=True)
     
     st.divider()
     

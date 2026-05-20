@@ -18,6 +18,8 @@ from view_market import render_market_module
 from view_corporate import render_corporate_module
 from view_platforms import render_platforms_module
 from view_community import render_community_module
+from view_global import render_global_vision_module
+from view_hall_of_fame import render_hall_of_fame_module
 
 
 # Page Configuration
@@ -131,13 +133,17 @@ df_studios = load_geo_data()
 st.title("🎮 Análisis de la Industria del Videojuego")
 menu = st.sidebar.radio(
     "Selecciona una dimensión:",
-    ["Mapa de estudios", "Evolución de plataformas", "Análisis de mercado", "Estructura corporativa", "Comunidad y Recepción"]
+    ["Visión Global", "Mapa de estudios", "Evolución de plataformas", "Análisis de mercado", "Estructura corporativa", "Comunidad y Recepción", "Salón de la Fama"]
 )
 
 st.sidebar.divider()
 
+# --- Módulo Nuevo: Visión Global de la Industria ---
+if menu == "Visión Global":
+    render_global_vision_module()
+
 # --- Módulo 1: Dimensión Geográfica (Mapa de Estudios) ---
-if menu == "Mapa de estudios":
+elif menu == "Mapa de estudios":
     st.sidebar.header("Filtros de Ubicación")
 
     country_list = ["Todos"] + sorted(df_studios['Country'].dropna().unique().tolist())
@@ -219,3 +225,7 @@ elif menu == "Estructura corporativa":
 # --- Módulo 4: Comunidad y Recepción ---
 elif menu == "Comunidad y Recepción":
     render_community_module()
+
+# --- Módulo Nuevo: Salón de la Fama ---
+elif menu == "Salón de la Fama":
+    render_hall_of_fame_module()

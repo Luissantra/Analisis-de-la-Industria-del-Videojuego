@@ -156,25 +156,12 @@ def render_corporate_module():
             
         st.write("---")
         
-        st.markdown("### 🎲 Capítulo 3: Matriz de Portfolio (Especialización)")
-        st.markdown("""
-        Analizamos la relación entre el volumen de producción y la calidad media por género. Los puntos más grandes indican 
-        una mayor especialización en ese género específico.
-        """)
-        df_games_all = get_all_games_data()
-        fig_genres_global = create_genre_and_score_chart(df_games_all)
-        if fig_genres_global:
-            st.plotly_chart(fig_genres_global, use_container_width=True)
-        else:
-            st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")
-
-        st.divider()
-        
-        st.markdown("### 👥 Capítulo 4: Target de Audiencia Global")
+        st.markdown("### 👥 Capítulo 3: Target de Audiencia Global")
         st.markdown("""
         ¿A quién venden los gigantes? La distribución por edades (ESRB) nos da pistas sobre 
         la estrategia de segmentación demográfica de cada compañía en su portfolio global.
         """)
+        df_games_all = get_all_games_data()
         fig_esrb = create_esrb_distribution_chart(df_games_all)
         if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
     else:
@@ -248,7 +235,8 @@ def render_corporate_module():
 
         # Para el top 10 necesitamos los juegos de ese conglomerado
         df_games_all = get_all_games_data()
-        df_games_filt = df_games_all[df_games_all['conglomerate'] == seleccion]
+        # Robust case-insensitive comparison to avoid string format issues
+        df_games_filt = df_games_all[df_games_all['conglomerate'].astype(str).str.strip().str.lower() == seleccion.strip().lower()]
 
         st.write("---")
         

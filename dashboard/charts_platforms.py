@@ -153,3 +153,66 @@ def create_catalog_distribution_chart(df_games):
     fig.update_traces(textposition="outside", hovertemplate="<b>%{y}</b><br>Juegos: %{x}<extra></extra>")
     fig.update_layout(xaxis_title="Cantidad de Juegos", yaxis_title="", margin=dict(l=0, r=20, t=40, b=20), showlegend=False)
     return fig
+
+def create_lifespan_gantt_chart(df):
+    """Crea un gráfico de Gantt interactivo mostrando la duración de vida de las consolas."""
+    df = df.copy()
+    
+    # Asegurar que discontinued_year y release_year están rellenos
+    df = df.dropna(subset=["release_year", "discontinued_year"])
+    
+    # Filtrar solo consolas reales (descartar PC u otros si no tienen discontinued_year válido)
+    df = df[df["generation"] != "Desconocida / Software"]
+    
+    df["start_date"] = pd.to_datetime(df["release_year"].astype(int).astype(str) + "-01-01")
+    df["end_date"] = pd.to_datetime(df["discontinued_year"].astype(int).astype(str) + "-12-31")
+    df["lifespan_years"] = df["discontinued_year"].astype(int) - df["release_year"].astype(int)
+    
+    # Ordenar por generación y año para alineación cronológica
+    gen_order_map = {
+        "2da Gen": 2,
+        "3ra Gen": 3,
+        "4ta Gen": 4,
+        "5ta Gen": 5,
+        "6ta Gen": 6,
+        "7ma Gen": 7,
+        "8va Gen": 8,
+        "9na Gen": 9
+    }
+    df["gen_order"] = df["generation"].map(gen_order_map).fillna(99)
+    df = df.sort_values(by=["gen_order", "release_year"], ascending=[True, True])
+    
+    fig = px.timeline(
+        df,
+        x_start="start_date",
+        x_end="end_date",
+        y="name",
+        color="manufacturer",
+        color_discrete_map=PLATFORM_COLORS,
+        hover_name="name",
+        hover_data={
+            "manufacturer": True,
+            "generation": True,
+            "release_year": True,
+            "discontinued_year": True,
+            "lifespan_years": True,
+            "units_sold_millions": True,
+            "start_date": False,
+            "end_date": False,
+            "name": False
+        },
+        template="plotly_dark",
+        title="Ciclo de Vida de las Consolas y Duración"
+    )
+    
+    fig.update_yaxes(autorange="reversed")  # Más antiguas arriba, progresando hacia abajo
+    
+    fig.update_layout(
+        xaxis_title="Línea de Tiempo",
+        yaxis_title="",
+        margin=dict(l=20, r=20, t=50, b=20),
+        height=650,
+        legend_title="Fabricante"
+    )
+    
+    return fig

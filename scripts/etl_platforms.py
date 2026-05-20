@@ -114,6 +114,7 @@ def run_platforms_etl():
             "name": final_name,
             "manufacturer": manufacturer,
             "release_year": release_year,
+            "discontinued_year": manual_info.get('discontinued_year'),
             "units_sold_millions": manual_info.get('units_sold_millions'),
             "games_count": rp.get('games_count', 0),
             "generation": manual_info.get('generation', 'Desconocida / Software'),
