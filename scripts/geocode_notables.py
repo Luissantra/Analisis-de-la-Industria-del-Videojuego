@@ -33,12 +33,12 @@ def run_geocode_notables():
     log.info("Iniciando geocodificación de estudios notables faltantes...")
     conn = sqlite3.connect(config.DATABASE_PATH)
 
-    # 1. Encontrar notables sin match en studio_locations
+    # 1. Encontrar notables sin match en studio_locations o con coordenadas vacías/genéricas
     query = """
         SELECT ns.id, ns.name as Company_Name, ns.city, ns.country
         FROM notable_studios ns
         LEFT JOIN studio_locations sl ON LOWER(ns.name) = LOWER(sl."Studio Name")
-        WHERE sl."Studio Name" IS NULL
+        WHERE (sl."Studio Name" IS NULL OR sl.Lat IS NULL OR sl.Lon IS NULL OR sl.City = 'Desconocida' OR sl.City = 'Unknown City')
           AND ns.city IS NOT NULL AND ns.city != '' AND ns.city != 'N/A' AND ns.city != 'Desconocida'
           AND ns.country IS NOT NULL AND ns.country != '' AND ns.country != 'N/A' AND ns.country != 'Desconocido'
     """
@@ -58,7 +58,7 @@ def run_geocode_notables():
                         query_address TEXT PRIMARY KEY,
                         latitude REAL,
                         longitude REAL
-                      )''')
+                       )''')
     conn.commit()
 
     try:
@@ -125,6 +125,11 @@ def run_geocode_notables():
 
         if lat is not None and lon is not None:
             region = obtain_region(country)
+            
+            # Delete any existing row in studio_locations to avoid duplicate entries
+            cursor.execute("""
+                DELETE FROM studio_locations WHERE LOWER("Studio Name") = LOWER(?)
+            """, (company,))
             
             # Insert into studio_locations
             # Use 'Indie' as default tier, build_db.py will update it later with cross-update
