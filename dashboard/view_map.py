@@ -15,15 +15,15 @@ def render_map_module(filtered_df):
         total_estudios = len(filtered_df)
         total_paises = filtered_df['Country'].nunique()
         
-        # Calculamos la región dominante de forma segura
-        region_top = filtered_df['Region'].mode()
+        # Calculamos la región dominante de forma segura, excluyendo 'Other' y 'N/A'
+        valid_regions = filtered_df[~filtered_df['Region'].isin(['Other', 'N/A'])]
+        region_top = valid_regions['Region'].mode()
         region_principal = region_top[0] if not region_top.empty else "N/A"
 
         # Métricas de Tiers
         aaa_count = len(filtered_df[filtered_df['studio_tier'] == 'AAA'])
         aa_count = len(filtered_df[filtered_df['studio_tier'] == 'AA'])
         indie_count = len(filtered_df[filtered_df['studio_tier'] == 'Indie'])
-        other_count = len(filtered_df[filtered_df['studio_tier'] == 'No Clasificado'])
 
         st.markdown("""
         <style>
@@ -38,13 +38,12 @@ def render_map_module(filtered_df):
         .metric-card.aaa { border-left-color: #dc3545; }
         .metric-card.aa { border-left-color: #ffc107; }
         .metric-card.indie { border-left-color: #28a745; }
-        .metric-card.other { border-left-color: #6c757d; }
         .metric-value { font-size: 24px; font-weight: bold; margin: 0; }
         .metric-label { font-size: 13px; color: #aaa; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
         </style>
         """, unsafe_allow_html=True)
 
-        col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
         with col1:
             st.markdown(f'<div class="metric-card"><p class="metric-value">{total_estudios}</p><p class="metric-label">🗺️ Total</p></div>', unsafe_allow_html=True)
         with col2:
@@ -57,8 +56,6 @@ def render_map_module(filtered_df):
             st.markdown(f'<div class="metric-card aa"><p class="metric-value" style="color:#ffc107;">{aa_count}</p><p class="metric-label">🎯 AA</p></div>', unsafe_allow_html=True)
         with col6:
             st.markdown(f'<div class="metric-card indie"><p class="metric-value" style="color:#28a745;">{indie_count}</p><p class="metric-label">🎮 Indie</p></div>', unsafe_allow_html=True)
-        with col7:
-            st.markdown(f'<div class="metric-card other"><p class="metric-value" style="color:#6c757d;">{other_count}</p><p class="metric-label">❓ Otros</p></div>', unsafe_allow_html=True)
         
         st.divider() # Un pequeño separador visual antes del mapa
         

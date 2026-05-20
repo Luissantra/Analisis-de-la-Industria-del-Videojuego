@@ -158,8 +158,15 @@ if menu == "Mapa de estudios":
         filtered_df = filtered_df[filtered_df['Studio Name'].str.contains(search_query, case=False, na=False)]
     if only_notables:
         filtered_df = filtered_df[filtered_df['is_notable'] == 1]
-    if selected_tiers:
-        filtered_df = filtered_df[filtered_df['studio_tier'].isin(selected_tiers)]
+        if selected_tiers:
+            filtered_df = filtered_df[filtered_df['studio_tier'].isin(selected_tiers)]
+    else:
+        if selected_tiers:
+            filtered_df = filtered_df[
+                (filtered_df['studio_tier'].isin(selected_tiers)) |
+                (filtered_df['is_notable'] != 1) |
+                (filtered_df['studio_tier'] == 'No Clasificado')
+            ]
 
     # Renderizamos el mapa
     render_map_module(filtered_df)
