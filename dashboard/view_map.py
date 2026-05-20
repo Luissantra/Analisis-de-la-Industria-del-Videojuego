@@ -70,9 +70,10 @@ def render_map_module(filtered_df):
         
         st.divider() # Separador visual después del mapa
         
-        # Treemap for Tiers (Más profesional que el Donut)
-        col_blank, col_chart, col_blank2 = st.columns([1, 4, 1])
-        with col_chart:
+        # --- Panel de Visualizaciones Analíticas ---
+        col_left, col_right = st.columns(2)
+        
+        with col_left:
             tier_data = filtered_df['studio_tier'].value_counts().reset_index()
             tier_data.columns = ['Tier', 'Count']
             
@@ -89,7 +90,7 @@ def render_map_module(filtered_df):
                 values='Count',
                 color='Tier',
                 color_discrete_map=color_map,
-                title="Distribución Jerárquica de Tiers"
+                title="Distribución de Tiers de Estudios"
             )
             fig.update_traces(textinfo="label+value+percent entry")
             fig.update_layout(
@@ -98,6 +99,55 @@ def render_map_module(filtered_df):
                 template="plotly_dark"
             )
             st.plotly_chart(fig, use_container_width=True)
+            
+        with col_right:
+            region_data = filtered_df['Region'].value_counts().reset_index()
+            region_data.columns = ['Region', 'Count']
+            
+            region_color_map = {
+                'North America': '#800080',
+                'South America': '#28a745',
+                'Europe': '#007bff',
+                'Asia': '#dc3545',
+                'Africa': '#fd7e14',
+                'Oceania': '#5f9ea0',
+                'Other': '#6c757d',
+                'N/A': '#444444'
+            }
+            
+            fig_region = px.pie(
+                region_data,
+                names='Region',
+                values='Count',
+                hole=0.6,
+                color='Region',
+                color_discrete_map=region_color_map,
+                title="Estudios por Región Geográfica"
+            )
+            
+            fig_region.update_traces(
+                textposition='inside',
+                textinfo='percent+label',
+                hovertemplate="<b>%{label}</b><br>Estudios: %{value}<br>Porcentaje: %{percent}<extra></extra>",
+                marker=dict(line=dict(color='#0E1117', width=2))
+            )
+            
+            # Anotación central con el total de estudios
+            total_region_estudios = region_data['Count'].sum()
+            fig_region.add_annotation(
+                text=f"<span style='font-family: system-ui, Arial, sans-serif; font-size:26px; font-weight:bold; color:white;'>{total_region_estudios}</span><br><span style='font-family: system-ui, Arial, sans-serif; font-size:11px; color:#aaa; font-weight:500; letter-spacing: 0.5px;'>ESTUDIOS</span>",
+                x=0.5, y=0.5,
+                showarrow=False,
+                align="center"
+            )
+            
+            fig_region.update_layout(
+                margin=dict(t=40, b=10, l=10, r=10),
+                height=350,
+                template="plotly_dark",
+                showlegend=False
+            )
+            st.plotly_chart(fig_region, use_container_width=True)
             
     else:
         st.info("No se encontraron estudios con los filtros actuales.")
