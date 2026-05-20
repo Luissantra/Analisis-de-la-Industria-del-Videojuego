@@ -21,15 +21,24 @@ def plot_critic_vs_user(df):
 
     # Clasificación bidireccional de la discrepancia
     def get_status(row):
-        if row['Review_Bombing_Index'] >= 20:
+        val = row['Review_Bombing_Index']
+        if pd.isna(val):
+            return 'Recepción Consistente'
+        try:
+            val_float = float(val)
+        except Exception:
+            return 'Recepción Consistente'
+            
+        if val_float >= 20:
             return 'Review Bombing (Divergencia Negativa)'
-        elif row['Review_Bombing_Index'] <= -20:
+        elif val_float <= -20:
             return 'Aclamación Popular (Divergencia Positiva)'
         else:
             return 'Recepción Consistente'
             
     # Recalculamos el índice aquí para asegurar consistencia tras la limpieza
     df_clean['Review_Bombing_Index'] = df_clean['Metacritic'] - df_clean['User_Score_100']
+    df_clean = df_clean.dropna(subset=['Review_Bombing_Index'])
     df_clean['Estado'] = df_clean.apply(get_status, axis=1)
 
     # El nombre del juego (título) siempre está presente en la nueva tabla

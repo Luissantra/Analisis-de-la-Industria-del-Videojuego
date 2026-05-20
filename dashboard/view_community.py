@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from model_corporate import get_all_games_data
-from charts_community import plot_critic_vs_user, plot_top_controversies, plot_top_acclaimed, plot_social_traction, create_esrb_distribution_chart, create_playtime_scatter_chart
+from charts_community import plot_critic_vs_user, plot_top_controversies, plot_top_acclaimed, plot_social_traction, create_playtime_scatter_chart
 import streamlit.components.v1 as components
 
 def render_community_module():
@@ -40,18 +40,13 @@ def render_community_module():
     st.divider()
     
     # --- Renderizado de Gráficos ---
-    st.markdown("### 👥 Capítulo 1: Psicografía y Audiencia Global")
+    st.markdown("### 👥 Capítulo 1: Compromiso y Engagement de los Jugadores")
     st.markdown("""
-    ¿A quién van dirigidos estos juegos? La distribución por edades (ESRB) y el tiempo de juego medio 
-    revelan el perfil de los usuarios y su compromiso (engagement) real.
+    ¿Cuánto tiempo invierten los jugadores en sus títulos favoritos? El tiempo de juego medio (Playtime) 
+    cruza la duración con la calidad media, evaluando el valor real de diversión percibido.
     """)
-    col_esrb, col_play = st.columns(2)
-    with col_esrb:
-        fig_esrb = create_esrb_distribution_chart(df_filtered)
-        if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
-    with col_play:
-        fig_play = create_playtime_scatter_chart(df_filtered)
-        if fig_play: st.plotly_chart(fig_play, use_container_width=True)
+    fig_play = create_playtime_scatter_chart(df_filtered)
+    if fig_play: st.plotly_chart(fig_play, use_container_width=True)
 
     st.divider()
     
@@ -97,14 +92,33 @@ def render_community_module():
         
     st.write("---")
     st.info("💡 **Análisis de Tendencias Externas (Google Trends)**")
-    st.markdown("El interés de búsqueda a lo largo del último año proporciona un termómetro externo al engagement dentro de las plataformas de gaming.")
+    st.markdown("Configura los parámetros para evaluar la fuerza de la marca a nivel de interés de búsqueda global.")
     
-    search_term = selected_publisher if selected_publisher != "Todos" else "Video Games"
+    # Controles Interactivos para Google Trends
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+        default_kw = "videojuegos" if selected_publisher == "Todos" else selected_publisher
+        search_term = st.text_input("Palabra clave a analizar (Google Trends):", value=default_kw)
+    with col_t2:
+        timeframe_option = st.selectbox(
+            "Periodo temporal de análisis:",
+            ["Últimos 12 meses", "Últimos 5 años", "Últimos 15 años", "Histórico (Desde 2004)"],
+            index=2
+        )
+        
+    # Mapeo de opciones de tiempo de Google Trends
+    timeframe_map = {
+        "Últimos 12 meses": "today 12-m",
+        "Últimos 5 años": "today 5-y",
+        "Últimos 15 años": "today 15-y",
+        "Histórico (Desde 2004)": "all"
+    }
+    timeframe_value = timeframe_map[timeframe_option]
     
     html_code = f"""
     <script type="text/javascript" src="https://ssl.gstatic.com/trends_nrtr/3720_RC01/embed_loader.js"></script>
     <script type="text/javascript">
-      trends.embed.renderExploreWidget("TIMESERIES", {{"comparisonItem":[{{"keyword":"{search_term}","geo":"","time":"today 12-m"}}],"category":0,"property":""}}, {{"exploreQuery":"q={search_term}&date=today 12-m","guestPath":"https://trends.google.es:443/trends/embed/"}});
+      trends.embed.renderExploreWidget("TIMESERIES", {{"comparisonItem":[{{"keyword":"{search_term}","geo":"","time":"{timeframe_value}"}}],"category":0,"property":""}}, {{"exploreQuery":"q={search_term}&date={timeframe_value}","guestPath":"https://trends.google.es:443/trends/embed/"}});
     </script>
     """
     components.html(html_code, height=450)

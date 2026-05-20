@@ -5,6 +5,7 @@ import sqlite3
 import config
 from pathlib import Path
 from charts_corporate import create_sunburst_chart, create_treemap_chart, create_genre_and_score_chart, create_genre_pie_chart, create_acquisition_timeline_chart, create_score_distribution_chart, PARENT_COLOR_MAP
+from charts_community import create_esrb_distribution_chart
 from model_corporate import get_all_corporate_data, get_conglomerate_data, get_all_games_data
 
 # Nombres abreviados para evitar saltos de línea en las tarjetas
@@ -168,6 +169,14 @@ def render_corporate_module():
             st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")
 
         st.divider()
+        
+        st.markdown("### 👥 Capítulo 4: Target de Audiencia Global")
+        st.markdown("""
+        ¿A quién venden los gigantes? La distribución por edades (ESRB) nos da pistas sobre 
+        la estrategia de segmentación demográfica de cada compañía en su portfolio global.
+        """)
+        fig_esrb = create_esrb_distribution_chart(df_games_all)
+        if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
     else:
         st.subheader(f"🔍 Análisis Estructural: {seleccion}")
         df_filtrado = get_conglomerate_data(seleccion)
@@ -242,7 +251,15 @@ def render_corporate_module():
         df_games_filt = df_games_all[df_games_all['conglomerate'] == seleccion]
 
         st.write("---")
-        st.markdown("### 🏆 Capítulo 3: Los 10 Títulos Más Aclamados")
+        
+        st.markdown("### 👥 Capítulo 3: Target de Audiencia Específico")
+        st.markdown(f"Analizamos el perfil de edad y el público objetivo del portfolio de **{seleccion}**.")
+        fig_esrb_spec = create_esrb_distribution_chart(df_games_filt)
+        if fig_esrb_spec: st.plotly_chart(fig_esrb_spec, use_container_width=True)
+        else: st.info("ℹ️ No hay datos suficientes de clasificación ESRB para este conglomerado.")
+
+        st.write("---")
+        st.markdown("### 🏆 Capítulo 4: Los 10 Títulos Más Aclamados")
         if not df_games_filt.empty:
             df_top_10 = df_games_filt.sort_values(by='metacritic', ascending=False).head(10)
             df_top_10 = df_top_10[['title', 'studio', 'metacritic', 'release_date']]
