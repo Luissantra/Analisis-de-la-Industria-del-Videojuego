@@ -4,7 +4,15 @@ import sqlite3
 import os
 import config
 from model_corporate import get_all_games_data
-from charts_community import plot_critic_vs_user, plot_top_controversies, plot_top_acclaimed, plot_social_traction, create_playtime_scatter_chart
+from models import get_games_with_sales_data
+from charts_community import (
+    plot_critic_vs_user, 
+    plot_top_controversies, 
+    plot_top_acclaimed, 
+    plot_social_traction, 
+    create_playtime_scatter_chart,
+    create_hype_vs_sales_chart
+)
 import streamlit.components.v1 as components
 
 def render_community_module():
@@ -94,6 +102,24 @@ def render_community_module():
             fig_social = plot_social_traction(df_filtered)
             if fig_social:
                 st.plotly_chart(fig_social, use_container_width=True)
+                
+            st.divider()
+            st.markdown("### 📊 Capítulo 6: El Cuadrante del Hype (Popularidad vs. Ventas)")
+            st.markdown("""
+            ¿Se traduce la popularidad y expectación de la comunidad en ventas reales? Cruzamos la cantidad de opiniones de la comunidad 
+            con la valoración crítica, dimensionando el tamaño de cada título según sus **ventas globales físicas y digitales en millones de copias**.
+            """)
+            df_sales = get_games_with_sales_data()
+            if selected_publisher != "Todos":
+                df_sales = df_sales[df_sales['conglomerate'] == selected_publisher]
+            # Aplicar filtro de reseñas mínimo
+            df_sales = df_sales[df_sales['rawg_ratings_count'] >= min_reviews]
+            
+            fig_hype_sales = create_hype_vs_sales_chart(df_sales)
+            if fig_hype_sales is not None:
+                st.plotly_chart(fig_hype_sales, use_container_width=True)
+            else:
+                st.info("ℹ️ No hay datos de ventas disponibles para el conglomerado o filtros seleccionados.")
                 
             st.write("---")
             st.info("💡 **Análisis de Tendencias Externas (Google Trends)**")

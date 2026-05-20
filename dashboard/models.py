@@ -144,3 +144,35 @@ def get_dynamic_market_events() -> list[dict]:
                 events.append({"date": str(row['release_date']), "company": COMPANY_MAP[row['parent']], "event": f"Hit Lanzado: {row['title']} (Meta: {row['metacritic']})"})
                 
     return events
+
+@st.cache_data(show_spinner="Cargando datos de ventas de VGChartz...")
+def get_games_with_sales_data() -> pd.DataFrame:
+    """Carga los juegos individuales de la base de datos enriquecidos con datos de ventas y conglomerados."""
+    query = """
+    SELECT 
+        vgs.rawg_id,
+        vgs.rawg_title AS title,
+        vgs.metacritic,
+        vgs.rawg_rating,
+        vgs.rawg_ratings_count,
+        vgs.playtime_hours,
+        vgs.rawg_genres AS genres,
+        vgs.rawg_platforms AS platforms,
+        vgs.esrb_rating,
+        vgs.total_sales,
+        vgs.na_sales,
+        vgs.jp_sales,
+        vgs.pal_sales,
+        vgs.other_sales,
+        vgs.vgc_publisher AS publisher,
+        vgs.vgc_developer AS developer,
+        vgs.first_release_year AS release_year,
+        c.name AS conglomerate,
+        s.name AS studio
+    FROM v_games_sales vgs
+    JOIN games g ON vgs.rawg_id = g.rawg_id
+    JOIN developers_rawg dr ON g.developer_rawg_id = dr.rawg_developer_id
+    JOIN notable_studios s ON dr.studio_id = s.id
+    JOIN conglomerates c ON s.parent_id = c.id
+    """
+    return run_query(query)

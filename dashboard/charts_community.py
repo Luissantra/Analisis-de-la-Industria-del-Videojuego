@@ -366,3 +366,97 @@ def create_playtime_scatter_chart(df):
     fig.add_hline(y=median_meta, line_dash="dash", line_color="rgba(255,255,255,0.3)", annotation_text=f"Mediana: {median_meta:.1f}")
     
     return fig
+
+def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
+    """
+    Crea un Scatter Plot de 4 cuadrantes (El Cuadrante del Hype)
+    relacionando la popularidad en comunidad (ratings count), calidad profesional (metacritic)
+    y ventas reales de VGChartz (tamaño de la burbuja).
+    """
+    if df.empty or 'total_sales' not in df.columns:
+        return None
+        
+    df_clean = df.dropna(subset=['metacritic', 'rawg_ratings_count', 'total_sales']).copy()
+    df_clean['metacritic'] = pd.to_numeric(df_clean['metacritic'], errors='coerce')
+    df_clean['rawg_ratings_count'] = pd.to_numeric(df_clean['rawg_ratings_count'], errors='coerce')
+    df_clean['total_sales'] = pd.to_numeric(df_clean['total_sales'], errors='coerce')
+    
+    df_clean = df_clean[(df_clean['rawg_ratings_count'] > 0) & (df_clean['total_sales'] > 0)]
+    
+    if df_clean.empty:
+        return None
+        
+    df_clean['main_genre'] = df_clean['genres'].astype(str).str.split(',').str[0]
+    
+    # Calcular medianas para las líneas divisorias
+    med_hype = df_clean['rawg_ratings_count'].median()
+    med_meta = df_clean['metacritic'].median()
+    
+    fig = px.scatter(
+        df_clean,
+        x='rawg_ratings_count',
+        y='metacritic',
+        size='total_sales',
+        color='main_genre',
+        hover_name='title',
+        custom_data=['studio', 'total_sales', 'release_year'],
+        template="plotly_dark",
+        size_max=40,
+        opacity=0.75,
+        color_discrete_sequence=px.colors.qualitative.Vivid,
+        title="El Cuadrante del Hype: Popularidad vs Calidad (Tamaño = Ventas en Millones de Copias)"
+    )
+    
+    # Añadir líneas de los cuadrantes
+    fig.add_vline(x=med_hype, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Hype Medio: {med_hype:.0f}")
+    fig.add_hline(y=med_meta, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Calidad Media: {med_meta:.0f}")
+    
+    # Añadir anotaciones en los 4 cuadrantes
+    max_hype = df_clean['rawg_ratings_count'].max()
+    
+    # Coordenadas relativas aproximadas para los textos explicativos
+    fig.add_annotation(
+        x=med_hype + (max_hype - med_hype) * 0.5, y=95,
+        text="🔥 ÉXITO TOTAL<br><sub>Alto Hype & Alta Calidad</sub>",
+        showarrow=False, font=dict(color="#81C784", size=11),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(129,199,132,0.3)", borderwidth=1, borderpad=4
+    )
+    fig.add_annotation(
+        x=med_hype - med_hype * 0.5, y=95,
+        text="💎 JOYA OCULTA<br><sub>Bajo Hype & Alta Calidad</sub>",
+        showarrow=False, font=dict(color="#64B5F6", size=11),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(100,181,246,0.3)", borderwidth=1, borderpad=4
+    )
+    fig.add_annotation(
+        x=med_hype + (max_hype - med_hype) * 0.5, y=45,
+        text="📢 FENÓMENO VIRAL<br><sub>Alto Hype & Baja Calidad</sub>",
+        showarrow=False, font=dict(color="#FFD54F", size=11),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(255,213,79,0.3)", borderwidth=1, borderpad=4
+    )
+    fig.add_annotation(
+        x=med_hype - med_hype * 0.5, y=45,
+        text="❌ NICHO O FRACASO<br><sub>Bajo Hype & Baja Calidad</sub>",
+        showarrow=False, font=dict(color="#E57373", size=11),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(229,115,115,0.3)", borderwidth=1, borderpad=4
+    )
+    
+    fig.update_layout(
+        xaxis_title="Volumen de Opiniones en Comunidad (RAWG Ratings Count)",
+        yaxis_title="Nota de Prensa Profesional (Metacritic)",
+        legend_title="Género Principal",
+        margin=dict(t=60, l=20, r=20, b=20)
+    )
+    
+    fig.update_traces(
+        marker=dict(line=dict(width=1, color='#0E1117')),
+        hovertemplate=(
+            "<b>%{hovertext}</b><br><br>"
+            "Estudio: %{customdata[0]}<br>"
+            "Lanzamiento: %{customdata[2]}<br>"
+            "Calidad (Metacritic): %{y}<br>"
+            "Hype (Opiniones): %{x:,.0f}<br>"
+            "Ventas Totales: %{customdata[1]:.2f}M copias<extra></extra>"
+        )
+    )
+    
+    return fig
