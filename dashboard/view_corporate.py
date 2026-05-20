@@ -182,7 +182,19 @@ def render_corporate_module():
         cruza la **popularidad social media promedio** de sus juegos (eje X) con su **calidad crítica promedio** (eje Y). 
         El tamaño de las burbujas es proporcional al **volumen total de juegos producidos** en su portfolio.
         """)
-        fig_magic = create_magic_quadrant_chart(df_corp_all)
+        
+        # Filtro dinámico para excluir a los indies e independientes
+        excluir_indies = st.checkbox(
+            "Excluir 'Independent & Other Publishers' para enfocar el análisis en los competidores puros", 
+            value=False,
+            help="Al activar esta opción, eliminamos el grupo catch-all de indies y otros publicadores pequeños. Esto redistribuye la escala visual y las medias críticas, revelando con total claridad las posiciones competitivas de los restantes gigantes de la industria."
+        )
+        
+        df_magic_input = df_corp_all.copy()
+        if excluir_indies:
+            df_magic_input = df_magic_input[df_magic_input['Parent'] != "Independent & Other Publishers"]
+            
+        fig_magic = create_magic_quadrant_chart(df_magic_input)
         if fig_magic is not None:
             st.plotly_chart(fig_magic, use_container_width=True)
     else:

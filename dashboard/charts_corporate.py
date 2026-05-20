@@ -369,7 +369,8 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
     """
     Crea un Scatter Plot de 4 cuadrantes (Cuadrante Mágico) para los conglomerados
     posicionándolos por popularidad media (ratings count medio) vs calidad media (Metacritic medio).
-    El tamaño es el volumen de producción total (Total_Games sumado).
+    El tamaño de la burbuja es suavizado mediante raíz cuadrada para evitar que los indies
+    dominen toda la escala, y los cuadrantes están coloreados de forma traslúcida y elegante.
     """
     df_clean = df.copy()
     
@@ -391,6 +392,9 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
     if g.empty:
         return None
         
+    # Calcular tamaño de burbuja suavizado por raíz cuadrada para balancear la escala visual
+    g['bubble_size'] = g['total_games'] ** 0.5
+        
     # Calcular medias para las líneas divisorias
     mean_pop = g['avg_pop'].mean()
     mean_meta = g['avg_meta'].mean()
@@ -405,29 +409,44 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
     }
     g['name_short'] = g['Parent'].map(SHORT_NAMES).fillna(g['Parent'])
     
+    # Calcular límites de los ejes con un margen estético del 15% para que los textos/burbujas no se corten
+    max_pop = g['avg_pop'].max()
+    min_pop = g['avg_pop'].min()
+    max_meta = g['avg_meta'].max()
+    min_meta = g['avg_meta'].min()
+    
+    pop_range = max_pop - min_pop if max_pop != min_pop else 100
+    meta_range = max_meta - min_meta if max_meta != min_meta else 10
+    
+    x_min = min_pop - pop_range * 0.15
+    x_max = max_pop + pop_range * 0.15
+    y_min = min_meta - meta_range * 0.15
+    y_max = max_meta + meta_range * 0.15
+    
     fig = px.scatter(
         g,
         x='avg_pop',
         y='avg_meta',
-        size='total_games',
+        size='bubble_size',
         color='Parent',
         color_discrete_map=PARENT_COLOR_MAP,
         text='name_short',
         hover_name='Parent',
         template="plotly_dark",
-        size_max=45,
+        size_max=32,
+        custom_data=['total_games'],
         title="Cuadrante Mágico del Videojuego: Conglomerados y Grandes Publishers"
     )
     
     # Estilizar las trazas (burbujas y texto)
     fig.update_traces(
         textposition='top center',
-        marker=dict(line=dict(color='#0E1117', width=1.5), opacity=0.85),
+        marker=dict(line=dict(color='#0E1117', width=1.5), opacity=0.9),
         hovertemplate=(
             "<b>%{hovertext}</b><br><br>"
             "Calidad Media (Metacritic): %{y:.1f}<br>"
             "Popularidad Media (Reviews): %{x:,.0f}<br>"
-            "Total Juegos en Portfolio: %{marker.size}<extra></extra>"
+            "Total Juegos en Portfolio: %{customdata[0]:,d}<extra></extra>"
         )
     )
     
@@ -435,32 +454,78 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
     fig.add_vline(x=mean_pop, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Popularidad Media: {mean_pop:.0f}")
     fig.add_hline(y=mean_meta, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Calidad Media: {mean_meta:.1f}")
     
-    # Añadir anotaciones explicativas en los cuadrantes
-    max_pop = g['avg_pop'].max()
-    min_pop = g['avg_pop'].min()
-    max_meta = g['avg_meta'].max()
-    min_meta = g['avg_meta'].min()
+    # Dibujar 4 rectángulos traslúcidos representando los cuadrantes de Gartner
+    fig.update_layout(
+        shapes=[
+            # Líderes (Verde traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=mean_pop, y0=mean_meta,
+                x1=x_max, y1=y_max,
+                fillcolor="rgba(129, 199, 132, 0.04)",
+                line=dict(width=0),
+                layer="below"
+            ),
+            # Visionarios (Azul traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=x_min, y0=mean_meta,
+                x1=mean_pop, y1=y_max,
+                fillcolor="rgba(100, 181, 246, 0.04)",
+                line=dict(width=0),
+                layer="below"
+            ),
+            # Retadores (Amarillo traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=mean_pop, y0=y_min,
+                x1=x_max, y1=mean_meta,
+                fillcolor="rgba(255, 213, 79, 0.03)",
+                line=dict(width=0),
+                layer="below"
+            ),
+            # Nicho (Rojo traslúcido)
+            dict(
+                type="rect",
+                xref="x", yref="y",
+                x0=x_min, y0=y_min,
+                x1=mean_pop, y1=mean_meta,
+                fillcolor="rgba(229, 115, 115, 0.03)",
+                line=dict(width=0),
+                layer="below"
+            )
+        ]
+    )
+    
+    # Calcular posiciones científicas para centrar las anotaciones de los cuadrantes
+    x_left = x_min + (mean_pop - x_min) * 0.5
+    x_right = mean_pop + (x_max - mean_pop) * 0.5
+    y_bottom = y_min + (mean_meta - y_min) * 0.5
+    y_top = mean_meta + (y_max - mean_meta) * 0.5
     
     fig.add_annotation(
-        x=mean_pop + (max_pop - mean_pop) * 0.5, y=mean_meta + (max_meta - mean_meta) * 0.5,
+        x=x_right, y=y_top,
         text="👑 LÍDERES<br><sub>Alta Calidad & Alta Popularidad</sub>",
         showarrow=False, font=dict(color="#81C784", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(129,199,132,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=mean_pop - (mean_pop - min_pop) * 0.5, y=mean_meta + (max_meta - mean_meta) * 0.5,
+        x=x_left, y=y_top,
         text="💎 VISIONARIOS<br><sub>Alta Calidad & Menor Difusión</sub>",
         showarrow=False, font=dict(color="#64B5F6", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(100,181,246,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=mean_pop + (max_pop - mean_pop) * 0.5, y=mean_meta - (mean_meta - min_meta) * 0.5,
+        x=x_right, y=y_bottom,
         text="📢 RETADORES<br><sub>Gran Difusión & Calidad Media</sub>",
         showarrow=False, font=dict(color="#FFD54F", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(255,213,79,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=mean_pop - (mean_pop - min_pop) * 0.5, y=mean_meta - (mean_meta - min_meta) * 0.5,
+        x=x_left, y=y_bottom,
         text="🎯 NICHO Y OPERADORES<br><sub>Foco Específico & Calidad Media</sub>",
         showarrow=False, font=dict(color="#E57373", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(229,115,115,0.3)", borderwidth=1, borderpad=4
@@ -474,5 +539,9 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)"
     )
+    
+    # Aplicar los rangos con márgenes estéticos
+    fig.update_xaxes(range=[x_min, x_max])
+    fig.update_yaxes(range=[y_min, y_max])
     
     return fig
