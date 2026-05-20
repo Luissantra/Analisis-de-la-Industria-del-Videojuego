@@ -47,7 +47,7 @@ def create_comparison_line_chart(df, timeframe, benchmark="Ninguno", dynamic_eve
             selector=dict(name=benchmark) # Busca específicamente el trazo con este nombre
         )
     
-    # Añadir Líneas de Hitos (Anotaciones)
+    # Añadir Líneas de Hitos (Anotaciones) agrupados por fecha y empresa
     min_date = df['Date'].min()
     max_date = df['Date'].max()
     companies_in_df = df['Company Name'].unique()
@@ -56,33 +56,107 @@ def create_comparison_line_chart(df, timeframe, benchmark="Ninguno", dynamic_eve
     if dynamic_events:
         all_events.extend(dynamic_events)
 
-    y_levels = [0.95, 0.85, 0.75] if metrica_y == "Precio (USD)" else [1.02, 1.10, 1.18]
-    event_counter = 1
-    
+    # Filtrar y ordenar los eventos cronológicamente
+    filtered_events = []
     for item in all_events:
-        event_date = pd.to_datetime(item["date"], errors='coerce')
-        if pd.isna(event_date):
-            continue
+        if item["company"] in companies_in_df:
+            event_date = pd.to_datetime(item["date"], errors='coerce')
+            if not pd.isna(event_date) and min_date <= event_date <= max_date:
+                filtered_events.append({
+                    "date": event_date,
+                    "company": item["company"],
+                    "event": item["event"]
+                })
+    filtered_events.sort(key=lambda x: x["date"])
+
+    # Agrupar eventos por (fecha, empresa) para evitar solapamientos en el mismo punto de la curva
+    grouped = {}
+    for ev in filtered_events:
+        d_key = ev["date"].strftime("%Y-%m-%d")
+        comp = ev["company"]
+        g_key = (d_key, comp)
+        if g_key not in grouped:
+            grouped[g_key] = {
+                "date": ev["date"],
+                "company": comp,
+                "events": []
+            }
+        grouped[g_key]["events"].append(ev["event"])
+
+    # Ordenar las agrupaciones cronológicamente
+    sorted_groups = sorted(grouped.values(), key=lambda x: x["date"])
+
+    # Numeración secuencial de las fechas únicas generales de eventos
+    unique_dates = sorted(list(set(g["date"] for g in sorted_groups)))
+    date_to_num = {d: i+1 for i, d in enumerate(unique_dates)}
+
+    # Ajustar niveles y según el tipo de gráfico
+    y_levels = [0.95, 0.85, 0.75] if metrica_y == "Precio (USD)" else [1.02, 1.10, 1.18]
+    
+    # Algoritmo de evasión de colisiones dinámico basado en proximidad en días
+    total_days = (max_date - min_date).days
+    if total_days <= 0:
+        total_days = 1
+    threshold_days = max(1, int(total_days * 0.05)) # Ventana del 5% del gráfico
+    
+    placed = [] # Lista de tuples (fecha, nivel_y)
+    
+    for g in sorted_groups:
+        event_date = g["date"]
+        comp = g["company"]
+        events_list = g["events"]
+        d_str = event_date.strftime("%Y-%m-%d")
+        
+        # Obtener el número secuencial de esta fecha
+        date_num = date_to_num[event_date]
+        
+        # Encontrar un y_level libre en la ventana de colisión
+        occupied_levels = set()
+        for p_date, p_level in placed:
+            if abs((event_date - p_date).days) < threshold_days:
+                occupied_levels.add(p_level)
+                
+        chosen_level = None
+        for lvl in y_levels:
+            if lvl not in occupied_levels:
+                chosen_level = lvl
+                break
+        if chosen_level is None:
+            chosen_level = y_levels[date_num % len(y_levels)]
             
-        if min_date <= event_date <= max_date and item["company"] in companies_in_df:
-            # We place annotations dynamically at the bottom or top depending on the chart
-            y_pos = y_levels[event_counter % len(y_levels)]
+        placed.append((event_date, chosen_level))
+        
+        # Colores
+        bg_color = BRAND_COLORS.get(comp, "white")
+        font_color = "black" if bg_color.lower() in ["#ffc107", "#ffeb3b", "#ffffff", "yellow", "white"] else "white"
+        
+        # Texto del badge y tooltip interactivo HTML
+        num_events = len(events_list)
+        if num_events == 1:
+            badge_text = f"<b>{date_num}</b>"
+            hover_text = f"<b>Hito {date_num} ({comp} - {d_str}):</b><br>{events_list[0]}"
+        else:
+            badge_text = f"<b>{date_num}⁺</b>"
+            bullets = "<br>• " + "<br>• ".join(events_list)
+            hover_text = f"<b>Hito {date_num}⁺ ({num_events} eventos de {comp} - {d_str}):</b>{bullets}"
             
-            fig.add_vline(x=event_date, line_width=1, line_dash="dash", line_color=BRAND_COLORS.get(item["company"], "white"))
-            fig.add_annotation(
-                x=event_date, 
-                y=y_pos, 
-                yref='paper', 
-                text=f"<b>{event_counter}</b>",
-                showarrow=False,
-                font=dict(color="black", size=10),
-                bgcolor=BRAND_COLORS.get(item["company"], "white"),
-                bordercolor="white",
-                borderwidth=1,
-                borderpad=3,
-                hovertext=item["event"]
-            )
-            event_counter += 1
+        # Dibujar la línea vertical en el color corporativo
+        fig.add_vline(x=event_date, line_width=1, line_dash="dash", line_color=bg_color)
+        
+        # Añadir la anotación premium
+        fig.add_annotation(
+            x=event_date,
+            y=chosen_level,
+            yref='paper',
+            text=badge_text,
+            showarrow=False,
+            font=dict(color=font_color, size=9, family="sans-serif"),
+            bgcolor=bg_color,
+            bordercolor="white",
+            borderwidth=1,
+            borderpad=3,
+            hovertext=hover_text
+        )
             
     # Formato del hover y ejes
     if metrica_y == "Rendimiento (%)":
@@ -165,7 +239,7 @@ def create_candlestick_chart(df, company_name, timeframe, dynamic_events=None):
         name='Volumen'
     ), row=2, col=1)
 
-    # Añadir Hitos al gráfico de velas
+    # 4. Añadir Hitos al gráfico de velas agrupados por fecha para evitar solapamientos
     min_date = company_data['Date'].min()
     max_date = company_data['Date'].max()
     
@@ -173,22 +247,95 @@ def create_candlestick_chart(df, company_name, timeframe, dynamic_events=None):
     if dynamic_events:
         all_events.extend(dynamic_events)
         
-    y_levels = [1.02, 1.12, 1.22]
-    for i, item in enumerate(all_events):
+    # Filtrar y ordenar los eventos cronológicamente para esta empresa y rango de fecha
+    company_events = []
+    for item in all_events:
         if item["company"] == company_name:
             event_date = pd.to_datetime(item["date"], errors='coerce')
-            if pd.isna(event_date):
-                continue
+            if not pd.isna(event_date) and min_date <= event_date <= max_date:
+                company_events.append({
+                    "date": event_date,
+                    "event": item["event"]
+                })
+    company_events.sort(key=lambda x: x["date"])
+    
+    # Agrupar eventos por la misma fecha para evitar que se pisen
+    grouped_events = {}
+    for ev in company_events:
+        d_key = ev["date"].strftime("%Y-%m-%d")
+        if d_key not in grouped_events:
+            grouped_events[d_key] = {
+                "date": ev["date"],
+                "events": []
+            }
+        grouped_events[d_key]["events"].append(ev["event"])
+        
+    # Ordenar las fechas de eventos agrupados cronológicamente
+    sorted_dates = sorted(grouped_events.keys())
+    
+    # Colores y niveles de altura en 'paper' para separar fechas muy cercanas
+    brand_color = BRAND_COLORS.get(company_name, "#1f77b4")
+    # Asegurar contraste con el color de fondo del badge
+    font_color = "black" if brand_color.lower() in ["#ffc107", "#ffeb3b", "#ffffff", "yellow", "white"] else "white"
+    
+    y_levels = [1.02, 1.09, 1.16]
+    
+    # Algoritmo de evasión de colisiones dinámico basado en proximidad en días (5% del rango total)
+    total_days = (max_date - min_date).days
+    if total_days <= 0:
+        total_days = 1
+    threshold_days = max(1, int(total_days * 0.05))
+    
+    placed = [] # Lista de tuples (fecha, nivel_y)
+    
+    for date_num, d_key in enumerate(sorted_dates, start=1):
+        data = grouped_events[d_key]
+        event_date = data["date"]
+        events_list = data["events"]
+        
+        # Encontrar un y_level libre en la ventana de colisión
+        occupied_levels = set()
+        for p_date, p_level in placed:
+            if abs((event_date - p_date).days) < threshold_days:
+                occupied_levels.add(p_level)
                 
-            if min_date <= event_date <= max_date:
-                y_pos = y_levels[i % len(y_levels)]
-                fig.add_vline(x=event_date, line_width=1, line_dash="dot", line_color="#888", row=1, col=1)
-                fig.add_annotation(
-                    x=event_date, y=y_pos, yref='paper', 
-                    text=item["event"], showarrow=False, 
-                    font=dict(color="#AAA", size=9),
-                    textangle=-30
-                )
+        chosen_level = None
+        for lvl in y_levels:
+            if lvl not in occupied_levels:
+                chosen_level = lvl
+                break
+        if chosen_level is None:
+            chosen_level = y_levels[date_num % len(y_levels)]
+            
+        placed.append((event_date, chosen_level))
+        
+        # Dibujar una línea vertical para la fecha
+        fig.add_vline(x=event_date, line_width=1, line_dash="dash", line_color=brand_color, row=1, col=1)
+        
+        # Construir el texto del badge y el tooltip HTML interactivo
+        num_events = len(events_list)
+        if num_events == 1:
+            badge_text = f"<b>{date_num}</b>"
+            hover_text = f"<b>Hito {date_num} ({d_key}):</b><br>{events_list[0]}"
+        else:
+            badge_text = f"<b>{date_num}⁺</b>"
+            bullets = "<br>• " + "<br>• ".join(events_list)
+            hover_text = f"<b>Hito {date_num}⁺ ({num_events} eventos - {d_key}):</b>{bullets}"
+            
+        fig.add_annotation(
+            x=event_date,
+            y=chosen_level,
+            yref='paper',
+            text=badge_text,
+            showarrow=False,
+            font=dict(color=font_color, size=9, family="sans-serif"),
+            bgcolor=brand_color,
+            bordercolor="white",
+            borderwidth=1,
+            borderpad=3,
+            hovertext=hover_text,
+            row=1, col=1
+        )
 
     # Limpiar y modernizar el diseño general
     fig.update_layout(
