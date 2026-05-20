@@ -4,7 +4,16 @@ import base64
 import sqlite3
 import config
 from pathlib import Path
-from charts_corporate import create_sunburst_chart, create_treemap_chart, create_genre_and_score_chart, create_genre_pie_chart, create_acquisition_timeline_chart, create_score_distribution_chart, PARENT_COLOR_MAP
+from charts_corporate import (
+    create_sunburst_chart, 
+    create_treemap_chart, 
+    create_genre_and_score_chart, 
+    create_genre_pie_chart, 
+    create_acquisition_timeline_chart, 
+    create_score_distribution_chart, 
+    create_magic_quadrant_chart,
+    PARENT_COLOR_MAP
+)
 from charts_community import create_esrb_distribution_chart
 from model_corporate import get_all_corporate_data, get_conglomerate_data, get_all_games_data
 
@@ -164,6 +173,18 @@ def render_corporate_module():
         df_games_all = get_all_games_data()
         fig_esrb = create_esrb_distribution_chart(df_games_all)
         if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
+        
+        st.write("---")
+        
+        st.markdown("### 📊 Capítulo 4: El Cuadrante Mágico de los Publishers")
+        st.markdown("""
+        ¿Dónde se posiciona cada gigante en el mapa competitivo global? Este gráfico, inspirado en los cuadrantes de Gartner, 
+        cruza la **popularidad social media promedio** de sus juegos (eje X) con su **calidad crítica promedio** (eje Y). 
+        El tamaño de las burbujas es proporcional al **volumen total de juegos producidos** en su portfolio.
+        """)
+        fig_magic = create_magic_quadrant_chart(df_corp_all)
+        if fig_magic is not None:
+            st.plotly_chart(fig_magic, use_container_width=True)
     else:
         st.subheader(f"🔍 Análisis Estructural: {seleccion}")
         df_filtrado = get_conglomerate_data(seleccion)

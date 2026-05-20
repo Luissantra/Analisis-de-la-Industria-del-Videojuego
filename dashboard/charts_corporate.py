@@ -364,3 +364,115 @@ def create_score_distribution_chart(df, color="#0070FF", is_global=False):
         showlegend=False
     )
     return fig
+
+def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
+    """
+    Crea un Scatter Plot de 4 cuadrantes (Cuadrante Mágico) para los conglomerados
+    posicionándolos por popularidad media (ratings count medio) vs calidad media (Metacritic medio).
+    El tamaño es el volumen de producción total (Total_Games sumado).
+    """
+    df_clean = df.copy()
+    
+    # Asegurar tipos correctos
+    df_clean['avg_metacritic'] = pd.to_numeric(df_clean['avg_metacritic'], errors='coerce')
+    df_clean['total_ratings_count'] = pd.to_numeric(df_clean['total_ratings_count'], errors='coerce')
+    df_clean['Total_Games'] = pd.to_numeric(df_clean['Total_Games'], errors='coerce')
+    
+    # Agrupar por conglomerado
+    g = df_clean.groupby('Parent').agg(
+        avg_meta=('avg_metacritic', 'mean'),
+        avg_pop=('total_ratings_count', 'mean'),
+        total_games=('Total_Games', 'sum')
+    ).reset_index()
+    
+    # Limpiar nulos
+    g = g.dropna(subset=['avg_meta', 'avg_pop', 'total_games'])
+    
+    if g.empty:
+        return None
+        
+    # Calcular medias para las líneas divisorias
+    mean_pop = g['avg_pop'].mean()
+    mean_meta = g['avg_meta'].mean()
+    
+    # Nombres abreviados para las burbujas
+    SHORT_NAMES = {
+        "Microsoft Gaming (Xbox, ZeniMax, Activision Blizzard)": "Microsoft Gaming",
+        "Sony Interactive Entertainment (PlayStation Studios)": "Sony PlayStation",
+        "Electronic Arts (EA)": "EA",
+        "Take-Two Interactive": "Take-Two",
+        "Independent & Other Publishers": "Indies & Otros"
+    }
+    g['name_short'] = g['Parent'].map(SHORT_NAMES).fillna(g['Parent'])
+    
+    fig = px.scatter(
+        g,
+        x='avg_pop',
+        y='avg_meta',
+        size='total_games',
+        color='Parent',
+        color_discrete_map=PARENT_COLOR_MAP,
+        text='name_short',
+        hover_name='Parent',
+        template="plotly_dark",
+        size_max=45,
+        title="Cuadrante Mágico del Videojuego: Conglomerados y Grandes Publishers"
+    )
+    
+    # Estilizar las trazas (burbujas y texto)
+    fig.update_traces(
+        textposition='top center',
+        marker=dict(line=dict(color='#0E1117', width=1.5), opacity=0.85),
+        hovertemplate=(
+            "<b>%{hovertext}</b><br><br>"
+            "Calidad Media (Metacritic): %{y:.1f}<br>"
+            "Popularidad Media (Reviews): %{x:,.0f}<br>"
+            "Total Juegos en Portfolio: %{marker.size}<extra></extra>"
+        )
+    )
+    
+    # Añadir líneas de los cuadrantes
+    fig.add_vline(x=mean_pop, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Popularidad Media: {mean_pop:.0f}")
+    fig.add_hline(y=mean_meta, line_dash="dash", line_color="rgba(255,255,255,0.25)", annotation_text=f"Calidad Media: {mean_meta:.1f}")
+    
+    # Añadir anotaciones explicativas en los cuadrantes
+    max_pop = g['avg_pop'].max()
+    min_pop = g['avg_pop'].min()
+    max_meta = g['avg_meta'].max()
+    min_meta = g['avg_meta'].min()
+    
+    fig.add_annotation(
+        x=mean_pop + (max_pop - mean_pop) * 0.5, y=mean_meta + (max_meta - mean_meta) * 0.5,
+        text="👑 LÍDERES<br><sub>Alta Calidad & Alta Popularidad</sub>",
+        showarrow=False, font=dict(color="#81C784", size=10),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(129,199,132,0.3)", borderwidth=1, borderpad=4
+    )
+    fig.add_annotation(
+        x=mean_pop - (mean_pop - min_pop) * 0.5, y=mean_meta + (max_meta - mean_meta) * 0.5,
+        text="💎 VISIONARIOS<br><sub>Alta Calidad & Menor Difusión</sub>",
+        showarrow=False, font=dict(color="#64B5F6", size=10),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(100,181,246,0.3)", borderwidth=1, borderpad=4
+    )
+    fig.add_annotation(
+        x=mean_pop + (max_pop - mean_pop) * 0.5, y=mean_meta - (mean_meta - min_meta) * 0.5,
+        text="📢 RETADORES<br><sub>Gran Difusión & Calidad Media</sub>",
+        showarrow=False, font=dict(color="#FFD54F", size=10),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(255,213,79,0.3)", borderwidth=1, borderpad=4
+    )
+    fig.add_annotation(
+        x=mean_pop - (mean_pop - min_pop) * 0.5, y=mean_meta - (mean_meta - min_meta) * 0.5,
+        text="🎯 NICHO Y OPERADORES<br><sub>Foco Específico & Calidad Media</sub>",
+        showarrow=False, font=dict(color="#E57373", size=10),
+        bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(229,115,115,0.3)", borderwidth=1, borderpad=4
+    )
+    
+    fig.update_layout(
+        xaxis_title="Popularidad Social Media (Votos Medios de la Comunidad)",
+        yaxis_title="Excelencia Crítica Media (Metacritic)",
+        margin=dict(t=60, l=20, r=20, b=60),
+        showlegend=False,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)"
+    )
+    
+    return fig

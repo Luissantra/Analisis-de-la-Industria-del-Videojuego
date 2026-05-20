@@ -1,0 +1,20 @@
+[
+    {"country": "United States", "iso_alpha": "USA", "revenue_bn": 47.0, "players_m": 190, "region": "North America"},
+    {"country": "China", "iso_alpha": "CHN", "revenue_bn": 45.5, "players_m": 685, "region": "Asia-Pacific"},
+    {"country": "Japan", "iso_alpha": "JPN", "revenue_bn": 23.0, "players_m": 78, "region": "Asia-Pacific"},
+    {"country": "South Korea", "iso_alpha": "KOR", "revenue_bn": 8.9, "players_m": 33, "region": "Asia-Pacific"},
+    {"country": "Germany", "iso_alpha": "DEU", "revenue_bn": 7.0, "players_m": 46, "region": "Europe"},
+    {"country": "United Kingdom", "iso_alpha": "GBR", "revenue_bn": 6.5, "players_m": 38, "region": "Europe"},
+    {"country": "France", "iso_alpha": "FRA", "revenue_bn": 5.5, "players_m": 38, "region": "Europe"},
+    {"country": "Canada", "iso_alpha": "CAN", "revenue_bn": 3.6, "players_m": 21, "region": "North America"},
+    {"country": "Italy", "iso_alpha": "ITA", "revenue_bn": 3.1, "players_m": 30, "region": "Europe"},
+    {"country": "Brazil", "iso_alpha": "BRA", "revenue_bn": 2.8, "players_m": 100, "region": "Latin America"},
+    {"country": "Spain", "iso_alpha": "ESP", "revenue_bn": 2.6, "players_m": 20, "region": "Europe"},
+    {"country": "Mexico", "iso_alpha": "MEX", "revenue_bn": 2.3, "players_m": 72, "region": "Latin America"},
+    {"country": "Australia", "iso_alpha": "AUS", "revenue_bn": 2.2, "players_m": 17, "region": "Asia-Pacific"},
+    {"country": "India", "iso_alpha": "IND", "revenue_bn": 2.0, "players_m": 420, "region": "Asia-Pacific"},
+    {"country": "Russia", "iso_alpha": "RUS", "revenue_bn": 1.8, "players_m": 72, "region": "Europe"},
+    {"country": "Indonesia", "iso_alpha": "IDN", "revenue_bn": 1.5, "players_m": 120, "region": "Asia-Pacific"},
+    {"country": "Saudi Arabia", "iso_alpha": "SAU", "revenue_bn": 1.3, "players_m": 23, "region": "Middle East & Africa"},
+    {"country": "Turkey", "iso_alpha": "TUR", "revenue_bn": 1.1, "players_m": 40, "region": "Middle East & Africa"}
+]

@@ -144,49 +144,60 @@ if menu == "Visión Global":
 
 # --- Módulo 1: Dimensión Geográfica (Mapa de Estudios) ---
 elif menu == "Mapa de estudios":
-    st.sidebar.header("Filtros de Ubicación")
-
-    country_list = ["Todos"] + sorted(df_studios['Country'].dropna().unique().tolist())
-    selected_country = st.sidebar.selectbox("Selecciona un país:", country_list)
-    search_query = st.sidebar.text_input("Buscar por nombre de estudio:")
-
-    st.sidebar.header("Filtros de Clasificación")
-    only_notables = st.sidebar.toggle("Solo estudios notables", value=False)
+    st.sidebar.header("Configuración de Capa")
+    map_mode = st.sidebar.radio(
+        "Selecciona la capa a mostrar:", 
+        ["🏢 Producción (Estudios)", "🌍 Mercado (Ingresos/Jugadores)"], 
+        index=0
+    )
     
-    tier_options = ["AAA", "AA", "Indie"]
-    selected_tiers = st.sidebar.multiselect("Nivel del estudio (Tier):", options=tier_options, default=tier_options)
+    if map_mode == "🏢 Producción (Estudios)":
+        st.sidebar.header("Filtros de Ubicación")
 
-    # Aplicamos filtros
-    filtered_df = df_studios.copy()
-    if selected_country != "Todos":
-        filtered_df = filtered_df[filtered_df['Country'] == selected_country]
-    if search_query:
-        filtered_df = filtered_df[filtered_df['Studio Name'].str.contains(search_query, case=False, na=False)]
-    if only_notables:
-        filtered_df = filtered_df[filtered_df['is_notable'] == 1]
-        if selected_tiers:
-            filtered_df = filtered_df[filtered_df['studio_tier'].isin(selected_tiers)]
-    else:
-        if selected_tiers:
-            filtered_df = filtered_df[
-                (filtered_df['studio_tier'].isin(selected_tiers)) |
-                (filtered_df['is_notable'] != 1) |
-                (filtered_df['studio_tier'] == 'No Clasificado')
-            ]
+        country_list = ["Todos"] + sorted(df_studios['Country'].dropna().unique().tolist())
+        selected_country = st.sidebar.selectbox("Selecciona un país:", country_list)
+        search_query = st.sidebar.text_input("Buscar por nombre de estudio:")
 
-    # Renderizamos el mapa
-    render_map_module(filtered_df)
-    
-    # Colocamos la tabla justo debajo del mapa 
-    st.divider()
-    with st.expander("📊 Ver directorio completo en formato tabla"):
-        # Adaptative columns
+        st.sidebar.header("Filtros de Clasificación")
+        only_notables = st.sidebar.toggle("Solo estudios notables", value=False)
+        
+        tier_options = ["AAA", "AA", "Indie"]
+        selected_tiers = st.sidebar.multiselect("Nivel del estudio (Tier):", options=tier_options, default=tier_options)
+
+        # Aplicamos filtros
+        filtered_df = df_studios.copy()
+        if selected_country != "Todos":
+            filtered_df = filtered_df[filtered_df['Country'] == selected_country]
+        if search_query:
+            filtered_df = filtered_df[filtered_df['Studio Name'].str.contains(search_query, case=False, na=False)]
         if only_notables:
-            display_cols = ["Studio Name", "City", "Country", "studio_tier", "Parent", "Top_Game", "Metacritic", "Genres"]
+            filtered_df = filtered_df[filtered_df['is_notable'] == 1]
+            if selected_tiers:
+                filtered_df = filtered_df[filtered_df['studio_tier'].isin(selected_tiers)]
         else:
-            display_cols = ["Studio Name", "City", "Country", "Region", "studio_tier"]
-            
-        st.dataframe(filtered_df[display_cols], use_container_width=True, hide_index=True)
+            if selected_tiers:
+                filtered_df = filtered_df[
+                    (filtered_df['studio_tier'].isin(selected_tiers)) |
+                    (filtered_df['is_notable'] != 1) |
+                    (filtered_df['studio_tier'] == 'No Clasificado')
+                ]
+
+        # Renderizamos el mapa
+        render_map_module(filtered_df, mode="Producción")
+        
+        # Colocamos la tabla justo debajo del mapa 
+        st.divider()
+        with st.expander("📊 Ver directorio completo en formato tabla"):
+            # Adaptative columns
+            if only_notables:
+                display_cols = ["Studio Name", "City", "Country", "studio_tier", "Parent", "Top_Game", "Metacritic", "Genres"]
+            else:
+                display_cols = ["Studio Name", "City", "Country", "Region", "studio_tier"]
+                
+            st.dataframe(filtered_df[display_cols], use_container_width=True, hide_index=True)
+    else:
+        # Renderizamos el mapa en modo Mercado
+        render_map_module(None, mode="Mercado")
 
 # --- Módulo Nuevo: Evolución de Plataformas ---
 elif menu == "Evolución de plataformas":
