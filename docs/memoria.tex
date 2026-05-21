@@ -1,0 +1,590 @@
+% ============================================================================
+% MEMORIA DEL CASO PRÁCTICO — Visualización de Datos
+% Análisis de la Industria del Videojuego
+% Compilar con: xelatex memoria.tex (dos pasadas para ToC)
+% ============================================================================
+\documentclass[11pt,a4paper]{article}
+
+% ── Tipografía y codificación ──────────────────────────────────────
+\usepackage{fontspec}
+\setmainfont{Times New Roman}[
+  BoldFont = Times New Roman Bold,
+  ItalicFont = Times New Roman Italic
+]
+\setsansfont{Helvetica Neue}
+\setmonofont{Menlo}[Scale=0.85]
+
+% ── Geometría y layout ────────────────────────────────────────────
+\usepackage[
+  top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm
+]{geometry}
+\usepackage{parskip}          % Párrafos sin sangrado, con separación
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Colores y estilo ──────────────────────────────────────────────
+\usepackage[dvipsnames,svgnames,table]{xcolor}
+\definecolor{accent}{HTML}{8B5CF6}
+\definecolor{darkbg}{HTML}{0F172A}
+\definecolor{teal}{HTML}{14B8A6}
+\definecolor{emerald}{HTML}{10B981}
+
+% ── Tablas ────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+
+% ── Figuras ───────────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\captionsetup{font=small, labelfont=bf}
+
+% ── Hipervínculos ─────────────────────────────────────────────────
+\usepackage[
+  colorlinks=true,
+  linkcolor=accent,
+  urlcolor=teal,
+  citecolor=accent
+]{hyperref}
+
+% ── Encabezados y pies ────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{Análisis de la Industria del Videojuego}}
+\fancyhead[R]{\small\textcolor{gray}{Visualización de Datos}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Secciones estilizadas ────────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\Large\bfseries\sffamily\color{accent}}
+  {\thesection.}{0.5em}{}
+\titleformat{\subsection}
+  {\large\bfseries\sffamily}
+  {\thesubsection.}{0.5em}{}
+\titleformat{\subsubsection}
+  {\normalsize\bfseries\sffamily}
+  {\thesubsubsection.}{0.5em}{}
+
+% ── Listas ────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=2pt}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=2pt}
+
+% ── Código ────────────────────────────────────────────────────────
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{gray!5},
+  frame=single,
+  rulecolor=\color{gray!30},
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  captionpos=b,
+  tabsize=2
+}
+
+% ── Otros ─────────────────────────────────────────────────────────
+\usepackage{tocloft}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+
+% ============================================================================
+\begin{document}
+
+% ████████████████████████████████████████████████████████████████████████████
+%  PORTADA (1 página)
+% ████████████████████████████████████████████████████████████████████████████
+\begin{titlepage}
+\begin{center}
+
+\vspace*{2cm}
+
+{\Huge\bfseries\sffamily\textcolor{accent}{Análisis de la Industria\\[4pt] del Videojuego}}
+
+\vspace{0.8cm}
+
+{\Large\sffamily Dashboard Interactivo de Visualización de Datos}
+
+\vspace{1.5cm}
+
+\rule{0.6\textwidth}{0.5pt}
+
+\vspace{1cm}
+
+{\large\textbf{Autor:} Luis Santra}
+
+\vspace{0.4cm}
+
+{\large\textbf{Asignatura:} Visualización de Datos}
+
+\vspace{0.4cm}
+
+{\large\textbf{Fecha:} Mayo 2026}
+
+\vspace{1.5cm}
+
+\rule{0.6\textwidth}{0.5pt}
+
+\vspace{1.5cm}
+
+\begin{abstract}
+\noindent
+Este trabajo presenta un dashboard interactivo construido con Streamlit y Plotly que permite explorar la industria global del videojuego desde siete dimensiones complementarias: visión macroeconómica, distribución geográfica de estudios, evolución de plataformas, análisis financiero bursátil, estructura corporativa, recepción comunitaria y un salón de la fama. El proyecto integra un pipeline ETL end-to-end que recopila datos de seis fuentes heterogéneas (RAWG, IGDB, VGChartz, GameDevMap, yfinance y datos de mercado sectoriales) y los consolida en una base de datos SQLite relacional con más de 200.000 registros. La visualización emplea principios de diseño visual avanzado ---glassmorfismo, paletas semánticas, animaciones dinámicas y cuadrantes analíticos tipo Gartner--- para transformar datos complejos en narrativas visuales accesibles e interactivas. El resultado es una herramienta de análisis que cubre la cadena completa desde la ingestión de datos hasta la visualización final, demostrando cómo las decisiones de diseño visual pueden amplificar la comprensión de fenómenos industriales complejos.
+\end{abstract}
+
+\end{center}
+\end{titlepage}
+
+% ── Índice ─────────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% ████████████████████████████████████████████████████████████████████████████
+%  1. PLANTEAMIENTO DEL PROBLEMA Y OBJETIVOS (1-2 páginas)
+% ████████████████████████████████████████████████████████████████████████████
+\section{Planteamiento del Problema y Objetivos de la Visualización}
+
+\subsection{Contexto y Motivación}
+
+La industria del videojuego se ha consolidado como el mayor sector del entretenimiento mundial, con ingresos globales que superaron los \$190.000 millones en 2024, cifra que excede la suma combinada de la taquilla cinematográfica y la música grabada. Sin embargo, esta industria presenta una complejidad estructural que dificulta su análisis holístico: miles de estudios de desarrollo distribuidos en más de 70 países, una docena de conglomerados corporativos con carteras de adquisiciones en constante evolución, ciclos de hardware (consolas) que condicionan los patrones de producción, y una comunidad de jugadores cuya recepción puede divergir drásticamente de la crítica profesional (fenómeno de \textit{Review Bombing}).
+
+\subsection{Problema a Resolver}
+
+No existe una herramienta pública que integre simultáneamente las dimensiones geográfica, corporativa, financiera, temporal, comercial y social de la industria del videojuego en un único punto de acceso interactivo. Los datos están dispersos en fuentes heterogéneas ---APIs de catálogos (RAWG, IGDB), scrapers de ventas (VGChartz), portales geográficos (GameDevMap), y servicios financieros (Yahoo Finance)--- y requieren un proceso de integración no trivial antes de poder ser visualizados de forma coherente.
+
+\subsection{Objetivos}
+
+Se definen los siguientes objetivos, organizados por el tipo de pregunta analítica que responden:
+
+\begin{enumerate}
+  \item \textbf{Macro-industria}: ¿Cuál es la posición relativa del videojuego frente a otros sectores del entretenimiento? ¿Cómo han evolucionado los géneros dominantes en producción y en ventas?
+  \item \textbf{Geografía}: ¿Dónde se concentra el talento de desarrollo? ¿Qué regiones generan más ingresos y cuál es el gasto medio por jugador (ARPU)?
+  \item \textbf{Plataformas}: ¿Cómo ha evolucionado la ``guerra de consolas''? ¿Qué generaciones y fabricantes han dominado el mercado?
+  \item \textbf{Mercado financiero}: ¿Cómo se comportan las acciones de los grandes publishers en comparación con índices de referencia?
+  \item \textbf{Estructura corporativa}: ¿Qué conglomerados dominan la industria? ¿Cuál es su posición en el cuadrante calidad-popularidad?
+  \item \textbf{Comunidad}: ¿Existe correlación entre la crítica profesional y la recepción de los jugadores? ¿Qué títulos son víctimas de \textit{Review Bombing}?
+  \item \textbf{Excelencia}: ¿Cuáles son los títulos más icónicos según ventas, crítica y engagement comunitario?
+\end{enumerate}
+
+\subsection{Público Objetivo}
+
+El dashboard está diseñado para analistas de la industria del entretenimiento, inversores sectoriales, periodistas especializados y académicos de game studies que necesiten una visión panorámica respaldada por datos reales y actualizados.
+
+
+% ████████████████████████████████████████████████████████████████████████████
+%  2. PREPARACIÓN DE LOS DATOS (máx. 3 páginas)
+% ████████████████████████████████████████████████████████████████████████████
+\newpage
+\section{Preparación de los Datos (Preprocesado)}
+
+\subsection{Arquitectura del Pipeline ETL}
+
+El pipeline sigue una arquitectura de 5 fases orquestadas por \texttt{main.py}, que puede ejecutarse con flags para saltar fases específicas durante el desarrollo:
+
+\begin{enumerate}
+  \item \textbf{Extracción} (Fase 1): Descarga de datos brutos desde fuentes externas.
+  \item \textbf{Enriquecimiento} (Fase 2): Cruce con APIs externas (IGDB, RAWG) para enriquecer metadatos.
+  \item \textbf{Transformación} (Fase 3): Geocodificación, normalización y limpieza local.
+  \item \textbf{Carga} (Fase 4): Construcción de la base de datos SQLite con esquema relacional.
+  \item \textbf{Auditoría} (Fase 5): Validación de integridad referencial y cobertura.
+\end{enumerate}
+
+\subsection{Fuentes de Datos}
+
+\begin{table}[H]
+\centering
+\caption{Fuentes de datos utilizadas y su contribución al sistema}
+\label{tab:fuentes}
+\begin{tabularx}{\textwidth}{>{\bfseries}l X l r}
+\toprule
+Fuente & Descripción & Script ETL & Registros \\
+\midrule
+GameDevMap & Scraping web de la geolocalización mundial de +6.600 estudios de desarrollo & \texttt{get\_gameDevMap.py} & 6.642 \\
+\addlinespace
+RAWG API & API REST con catálogo de +800.000 juegos: metadatos, géneros, puntuaciones Metacritic, ratings de usuarios, tiempo de juego & \texttt{etl\_games\_rawg.py} & 4.499 \\
+\addlinespace
+IGDB API & API de Twitch para metadatos corporativos: empresa matriz, descripción, logo, juegos desarrollados con rating & \texttt{etl\_igdb.py} & 197 \\
+\addlinespace
+VGChartz & Dataset CSV de Kaggle con ventas históricas por consola (~64K filas brutas, 17.5K tras limpieza) con desglose regional (NA, JP, PAL) & \texttt{etl\_vgchartz.py} & 17.570 \\
+\addlinespace
+Yahoo Finance & Datos bursátiles históricos (OHLCV) de 11 empresas gaming + 3 índices benchmark vía \texttt{yfinance} & \texttt{get\_market\_data.py} & 163.709 \\
+\addlinespace
+Manual/Config & Datos curados de mercado global (ingresos, jugadores, ARPU por país), plataformas y comparativas intersectoriales & JSON configs & ---  \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Esquema de Base de Datos}
+
+La base de datos SQLite (\texttt{videogames.db}) sigue un esquema de copo de nieve (\textit{snowflake schema}) con 12 tablas:
+
+\begin{table}[H]
+\centering
+\caption{Tablas principales de la base de datos}
+\label{tab:schema}
+\begin{tabularx}{\textwidth}{l X r}
+\toprule
+Tabla & Rol en el sistema & Filas \\
+\midrule
+\texttt{conglomerates} & Dimensión: 12 grandes grupos corporativos (Sony, Microsoft, EA...) & 12 \\
+\texttt{notable\_studios} & Dimensión: 197 estudios notables vinculados a conglomerados & 197 \\
+\texttt{developers\_rawg} & Puente: mapeo interno-ID → RAWG developer ID & 193 \\
+\texttt{games} & Hechos: catálogo granular de 4.499 juegos con metadatos RAWG & 4.499 \\
+\texttt{game\_sales} & Hechos: ventas por título/consola con desglose regional & 17.570 \\
+\texttt{game\_sales\_agg} & Agregado: ventas consolidadas por título (suma multi-plataforma) & 11.999 \\
+\texttt{studio\_locations} & Dimensión geográfica: coordenadas GPS de 6.642 estudios & 6.642 \\
+\texttt{stock\_prices} & Serie temporal: cotizaciones diarias OHLCV de 14 activos & 163.709 \\
+\texttt{platforms} & Dimensión: 27 consolas con ventas, generación y fabricante & 27 \\
+\texttt{dim\_studios\_corporate} & Vista materializada: métricas pre-calculadas por estudio para el dashboard & 201 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Procesos de Limpieza y Transformación Clave}
+
+\subsubsection{Geocodificación de Estudios}
+El script \texttt{get\_gameDevMap.py} realiza web scraping de GameDevMap, extrayendo estudios por ubicación geográfica. Cada estudio se geocodifica con Nominatim (OpenStreetMap) usando \texttt{geopy} con rate limiting para respetar los términos de servicio. Se implementó un sistema de caché en SQLite (\texttt{geocode\_cache}, 9.803 entradas) para evitar re-geocodificar ubicaciones ya procesadas.
+
+\subsubsection{Construcción de la Capa Corporativa (MDM)}
+La jerarquía corporativa se construye en dos pasos: (1) \texttt{etl\_igdb.py} consulta la API de IGDB para resolver la empresa matriz de cada estudio y obtener su \textit{Golden Record} (nombre canónico, logo, país, juego estrella), y (2) \texttt{enrich\_studios.py} cruza estos datos con el catálogo de RAWG para calcular métricas agregadas por estudio (media Metacritic, ratings count, top game, géneros). El resultado se materializa en la vista \texttt{dim\_studios\_corporate}.
+
+\subsubsection{Integración de Ventas VGChartz}
+\texttt{etl\_vgchartz.py} procesa un CSV de ~64.000 filas filtrando registros con ventas positivas (17.570 supervivientes), normalizando títulos con \texttt{str.title()}, convirtiendo critic\_score de escala 0-10 a 0-100, y realizando un cruce por título con la tabla \texttt{games} de RAWG para establecer la clave foránea \texttt{rawg\_game\_id}. Adicionalmente, genera la tabla \texttt{game\_sales\_agg} que consolida ventas multi-plataforma por título único.
+
+\subsubsection{Tratamiento de Valores Nulos y Tipos}
+Un problema crítico detectado durante el desarrollo fue que la columna \texttt{avg\_metacritic} de la vista \texttt{dim\_studios\_corporate} almacena valores como \texttt{TEXT} en SQLite, incluyendo cadenas literales \texttt{'N/A'} para estudios sin datos. Al usar \texttt{dtype\_backend='pyarrow'}, la conversión con \texttt{pd.to\_numeric(errors='coerce')} fallaba silenciosamente, eliminando conglomerados completos del cuadrante mágico. La solución fue forzar la conversión a pandas nativo antes de la operación numérica.
+
+
+% ████████████████████████████████████████████████████████████████████████████
+%  3. PROCESADO Y ANÁLISIS (máx. 8 páginas)
+% ████████████████████████████████████████████████████████████████████████████
+\newpage
+\section{Procesado y Análisis (Estudios y Visualizaciones Parciales)}
+
+El dashboard se estructura en 7 módulos analíticos, cada uno correspondiente a una dimensión de análisis de la industria. A continuación se describe cada módulo, las técnicas de visualización empleadas y las decisiones de diseño que las justifican.
+
+\subsection{Dimensión 1: Visión Global de la Industria}
+
+Este módulo responde a la pregunta ``¿Qué tan grande es la industria del videojuego y cómo ha evolucionado?'' y se compone de 4 capítulos narrativos:
+
+\subsubsection{Capítulo 1 — Comparativa Intersectorial}
+\begin{itemize}
+  \item \textbf{Tipo de gráfico}: Gráfico de líneas múltiples con área sombreada.
+  \item \textbf{Variables}: Ingresos anuales en USD Bn (2017--2026) de 4 industrias: Videojuegos, Cine (Box Office), Música Grabada, Streaming OTT.
+  \item \textbf{Justificación}: Las líneas permiten comparar tendencias temporales entre categorías, mientras que el área sombreada enfatiza la dominancia progresiva del videojuego. Se eligió la escala temporal 2017--2026 para cubrir el efecto COVID-19 (2020), punto de inflexión clave.
+\end{itemize}
+
+\subsubsection{Capítulo 2 — Evolución Histórica de Géneros}
+\begin{itemize}
+  \item \textbf{Tipo de gráfico}: \textit{Stacked Area Chart} (gráfico de áreas acumuladas).
+  \item \textbf{Variables}: Cantidad de títulos lanzados por año (1980--2026), segmentados por género.
+  \item \textbf{Justificación}: El área acumulada muestra tanto la composición porcentual como el volumen absoluto de producción. La paleta \texttt{Vivid} de Plotly se seleccionó por su alta diferenciación cromática entre categorías (hasta 20 géneros distintos), manteniendo legibilidad sobre fondo oscuro.
+\end{itemize}
+
+\subsubsection{Capítulo 3 — Matriz de Portfolio Global}
+\begin{itemize}
+  \item \textbf{Tipo de gráfico}: \textit{Scatter Plot} con burbujas dimensionadas.
+  \item \textbf{Variables}: Eje X = Volumen de producción (número de títulos por género), Eje Y = Calidad media (Metacritic), Tamaño = Volumen total.
+  \item \textbf{Justificación}: El scatter plot bidimensional revela la relación producción-calidad y permite identificar géneros ``eficientes'' (alta calidad con baja producción) versus géneros ``saturados'' (alta producción con calidad media).
+\end{itemize}
+
+\subsubsection{Capítulo 4 — La Carrera Comercial (Bar Chart Race)}
+\begin{itemize}
+  \item \textbf{Tipo de gráfico}: \textit{Animated Bar Chart Race} con escala dinámica.
+  \item \textbf{Variables}: Ventas acumuladas en millones de copias por género (1990--2020).
+  \item \textbf{Datos}: Tabla \texttt{game\_sales} de VGChartz (17.570 registros con ventas positivas).
+  \item \textbf{Decisión clave}: Se migró este gráfico de mostrar lanzamientos acumulados (redundante con el Capítulo 2) a \textbf{ventas acumuladas}, aportando una dimensión complementaria: no solo qué se produce, sino qué se vende. La escala del eje X se recalcula dinámicamente en cada frame de la animación (\texttt{fig.frames[i].layout.xaxis.range}) con un 15\% de margen para evitar el problema de escala fija que comprimía los primeros años.
+  \item \textbf{Justificación del formato}: La animación temporal es la forma más intuitiva de representar una ``carrera'' competitiva entre categorías. Los sufijos \texttt{M} (millones) y la transición suavizada (\texttt{cubic-in-out}, 650ms) refuerzan la narrativa de acumulación progresiva.
+\end{itemize}
+
+\subsection{Dimensión 2: Mapa de Estudios (Geográfica)}
+
+El módulo geográfico ofrece dos capas alternables: \textbf{Producción} y \textbf{Mercado}.
+
+\subsubsection{Capa de Producción — Mapa de Estudios}
+\begin{itemize}
+  \item \textbf{Tipo}: Mapa base Folium con marcadores por cluster.
+  \item \textbf{Variables}: Ubicación GPS de 6.642 estudios, coloreados por tier (AAA/AA/Indie) y filtrables por país, tier y notabilidad.
+  \item \textbf{Justificación}: La agrupación por cluster evita la saturación visual a escalas globales, mientras que el zoom progresivo revela estudios individuales. Los tooltips muestran metadatos contextuales (nombre, juego estrella, Metacritic).
+\end{itemize}
+
+\subsubsection{Capa de Mercado — Análisis Económico Geográfico}
+\begin{itemize}
+  \item \textbf{Tipos de gráfico}: Choropleth mundial + 4 KPI cards + Treemap regional + Bar chart horizontal de ARPU.
+  \item \textbf{Paletas}: Se utilizan tres paletas distintas para codificar dimensiones diferentes:
+  \begin{itemize}
+    \item \texttt{Tealgrn} (verde-azulado): choropleth y treemap de ingresos --- elegida por su alta diferenciación en tonos bajos (mercados pequeños) y altos (Asia-Pacífico), superior a la escala monocromática \texttt{Purples} anterior.
+    \item \texttt{YlOrRd} (amarillo-naranja-rojo): ARPU --- comunica intuitivamente la intensidad del gasto (de moderado a intensivo, metáfora de ``calor'').
+    \item Colores semánticos en KPIs: esmeralda (\texttt{\#10B981}) para ingresos (verde = dinero), cian (\texttt{\#06B6D4}) para audiencia (amplitud), ámbar (\texttt{\#F59E0B}) para ARPU (valor monetario), rosa (\texttt{\#EC4899}) para la región líder (distinción).
+  \end{itemize}
+  \item \textbf{Decisión de diseño}: Se añadió \texttt{showocean=True} con \texttt{oceancolor=``rgba(15,23,42,0.9)''} para integrar el mapa con el fondo oscuro del dashboard, evitando el contraste abrupto de un océano blanco.
+\end{itemize}
+
+\subsection{Dimensión 3: Evolución de Plataformas}
+
+\begin{itemize}
+  \item \textbf{Capítulo 1 — Roadmap Timeline}: Gráfico de Gantt horizontal donde cada carril representa un fabricante (Nintendo, Sony, Microsoft, Sega, Atari) y cada barra una consola con su periodo de vida activo. El tamaño de los puntos es proporcional a las ventas globales.
+  \item \textbf{Capítulo 2 — Ranking de Ventas}: Bar chart horizontal ordenado por unidades vendidas, con imágenes de consolas integradas.
+  \item \textbf{Capítulo 3 — Distribución del Catálogo}: Análisis de la distribución de juegos por plataforma usando datos cruzados con la tabla \texttt{games}.
+  \item \textbf{Justificación del Gantt}: El timeline horizontal es la representación natural de ciclos de vida de productos hardware que compiten en generaciones solapadas, permitiendo visualizar rápidamente qué fabricante dominó cada era.
+\end{itemize}
+
+\subsection{Dimensión 4: Análisis de Mercado Financiero}
+
+\begin{itemize}
+  \item \textbf{Tipo}: Gráficos de líneas interactivos de series temporales OHLCV.
+  \item \textbf{Variables}: Cotización diaria (Open, High, Low, Close, Volume), retorno diario (\%), retorno acumulado (\%), para 11 empresas gaming + 3 índices benchmark (S\&P 500, NASDAQ, Nikkei 225).
+  \item \textbf{Interactividad}: El usuario selecciona dinámicamente qué empresas comparar y opcionalmente añade un benchmark, con carga diferida para optimizar rendimiento (163.709 registros).
+  \item \textbf{Justificación}: Las series temporales superpuestas con un benchmark de referencia son el estándar de la industria financiera para el análisis comparativo de activos, familiar para el público objetivo (inversores sectoriales).
+\end{itemize}
+
+\subsection{Dimensión 5: Estructura Corporativa}
+
+\subsubsection{Vista Global}
+\begin{itemize}
+  \item \textbf{Sunburst Chart}: Visualización jerárquica radial (Conglomerado → Estudio → Juegos), idónea para representar la estructura de propiedad corporativa donde cada anillo amplía el nivel de detalle.
+  \item \textbf{Galería de logos interactiva}: Tarjetas clicables con logos base64 (descargados de IGDB) para navegación directa. Efecto hover CSS con \texttt{translateY(-5px)} para feedback táctil.
+\end{itemize}
+
+\subsubsection{Cuadrante Mágico Corporativo}
+\begin{itemize}
+  \item \textbf{Tipo}: \textit{Scatter Plot} con 4 cuadrantes etiquetados (inspirado en el \textit{Magic Quadrant} de Gartner).
+  \item \textbf{Ejes}: X = Popularidad media (RAWG ratings count), Y = Calidad media (Metacritic).
+  \item \textbf{Tamaño}: Total de juegos en portfolio, suavizado con $\sqrt{n}$ para evitar que los ``Indies \& Otros'' (1.266 juegos) dominen la escala.
+  \item \textbf{Cuadrantes}: 4 rectángulos traslúcidos (Verde = Líderes, Azul = Visionarios, Amarillo = Retadores, Rojo = Nicho) con opacidad $\alpha=0.04$ para no competir con los datos.
+  \item \textbf{Corrección técnica}: Conversión explícita de PyArrow a pandas nativo antes de la agregación para garantizar que los 12 conglomerados se rendericen.
+\end{itemize}
+
+\subsection{Dimensión 6: Comunidad y Recepción}
+
+\subsubsection{Scatter de Crítica vs.\ Usuario}
+Detecta discrepancias entre la nota Metacritic (prensa) y el rating RAWG (usuarios), visualizando el fenómeno de \textit{Review Bombing}: títulos significativamente por debajo de la diagonal de consenso.
+
+\subsubsection{Top Controversias y Aclamados}
+Bar charts horizontales que listan los títulos con mayor y menor índice de \textit{Review Bombing} (\textit{Review\_Bombing\_Index = User\_Score\_100 - Metacritic}).
+
+\subsubsection{Cuadrante del Hype}
+\begin{itemize}
+  \item \textbf{Tipo}: Scatter plot con 4 cuadrantes, estéticamente unificado con el cuadrante corporativo.
+  \item \textbf{Ejes}: X = Hype (RAWG ratings count), Y = Calidad (Metacritic). Tamaño = Ventas VGChartz.
+  \item \textbf{Cuadrantes}: Éxito Total, Joya Oculta, Fenómeno Viral, Nicho/Fracaso.
+  \item \textbf{Coherencia visual}: Mismos colores de cuadrante, padding 15\%, opacidad 0.85 y font-size 10px que el cuadrante corporativo.
+\end{itemize}
+
+\subsection{Dimensión 7: Salón de la Fama}
+
+Módulo de consulta que muestra los títulos más icónicos mediante tarjetas visuales con carátulas obtenidas dinámicamente de la API de RAWG, usando un caché JSON local (\texttt{game\_covers.json}) para minimizar llamadas a la API.
+
+
+% ████████████████████████████████████████████████████████████████████████████
+%  4. VISUALIZACIÓN (máx. 4 páginas)
+% ████████████████████████████████████████████████████████████████████████████
+\newpage
+\section{Visualización (Integración de los Resultados Parciales)}
+
+\subsection{Arquitectura Tecnológica}
+
+\begin{table}[H]
+\centering
+\caption{Stack tecnológico del dashboard}
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+Componente & Tecnología y justificación \\
+\midrule
+Framework UI & \textbf{Streamlit} — Framework de Python que permite construir aplicaciones web interactivas sin código frontend, ideal para dashboards analíticos con actualización reactiva \\
+Gráficos & \textbf{Plotly} (Express + Graph Objects) — Librería de gráficos interactivos con zoom, hover, animaciones y exportación, compatible con Streamlit via \texttt{st.plotly\_chart} \\
+Mapas & \textbf{Folium} + \textbf{streamlit-folium} — Mapas interactivos basados en Leaflet.js con clusters, tooltips y capas base configurables \\
+Base de datos & \textbf{SQLite} — Base de datos embebida sin servidor, portátil (un solo fichero .db), suficiente para el volumen de datos del proyecto \\
+Pipeline ETL & \textbf{Python} (pandas, requests, BeautifulSoup, geopy, yfinance, SQLAlchemy) \\
+Despliegue & Local (\texttt{streamlit run dashboard/app.py}) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Sistema de Diseño Visual}
+
+\subsubsection{Paradigma: Glassmorfismo Oscuro (\textit{Dark Glassmorphism})}
+
+Se adoptó un paradigma de diseño \textit{glassmorphism} sobre fondo oscuro por las siguientes razones:
+
+\begin{enumerate}
+  \item \textbf{Reducción de fatiga visual}: Los dashboards analíticos se usan durante sesiones prolongadas. Un fondo oscuro (\texttt{\#0F172A}) con componentes traslúcidos reduce la emisión de luz y la fatiga ocular.
+  \item \textbf{Prominencia de los datos}: Los colores de datos destacan naturalmente sobre fondos oscuros, especialmente las paletas saturadas como \texttt{Vivid}, \texttt{Tealgrn} y \texttt{YlOrRd}.
+  \item \textbf{Modernidad perceptual}: El glassmorfismo transmite una estética premium y actual, coherente con la imagen de marca de la industria del videojuego (interfaces de consola, tiendas digitales).
+\end{enumerate}
+
+Implementación técnica: las tarjetas usan \texttt{background-color: rgba(30,41,59,0.45)} con \texttt{backdrop-filter: blur(10px)} y bordes \texttt{rgba(255,255,255,0.05)}, creando el efecto de ``cristal esmerilado'' sobre el fondo oscuro.
+
+\subsubsection{Paletas de Color: Justificación Semántica}
+
+Las paletas no se eligieron por preferencia estética sino por su \textbf{función semántica}:
+
+\begin{table}[H]
+\centering
+\caption{Justificación de las paletas de color empleadas}
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+Paleta & Contexto & Justificación \\
+\midrule
+\texttt{Vivid} (Plotly) & Géneros, categorías & Máxima diferenciación cromática entre 16+ categorías. Colores saturados y equidistantes en el espacio HSL \\
+\texttt{Tealgrn} & Datos geográficos/mercado & Escala secuencial verde-azulada que funciona sobre fondo oscuro, evita las connotaciones negativas del rojo y comunica ``crecimiento'' \\
+\texttt{YlOrRd} & ARPU (gasto) & Escala divergente ``calor'' que comunica intuitivamente intensidad de gasto, de moderado (amarillo) a intensivo (rojo) \\
+Acento \texttt{\#8B5CF6} & UI framework & Violeta como color primario del dashboard, neutro respecto a los datos (no aparece en ninguna escala de datos) \\
+Semáforo 4Q & Cuadrantes Mágicos & Verde=éxito, Azul=potencial, Amarillo=riesgo, Rojo=debilidad. Código de colores universal en matrices estratégicas \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsubsection{Micro-animaciones e Interactividad}
+
+\begin{itemize}
+  \item \textbf{Hover effects}: Todas las tarjetas interactivas implementan \texttt{translateY(-2px\textasciitilde-5px)} con transición \texttt{cubic-bezier} de 0.3s, proporcionando feedback táctil sin ser intrusivo.
+  \item \textbf{Bar Chart Race}: Animación de 650ms por frame con transición suavizada \texttt{cubic-in-out} de 450ms. Botones de Play/Pause estilizados con acento violeta semitransparente.
+  \item \textbf{Tooltips enriquecidos}: Todos los gráficos usan \texttt{hovertemplate} personalizados con formateo HTML, mostrando métricas contextuales relevantes.
+\end{itemize}
+
+\subsection{Estrategia de Navegación}
+
+El dashboard emplea un menú lateral (\texttt{st.sidebar.radio}) con 7 opciones que representan las dimensiones de análisis. Esta arquitectura de navegación ``plana'' se prefirió sobre pestañas anidadas por dos razones:
+
+\begin{enumerate}
+  \item \textbf{Descubribilidad}: El usuario ve todas las dimensiones disponibles de un vistazo.
+  \item \textbf{Independencia modular}: Cada dimensión carga solo sus datos, evitando tiempos de carga innecesarios. El decorador \texttt{@st.cache\_data} garantiza que las consultas SQL se ejecutan una sola vez por sesión.
+\end{enumerate}
+
+Dentro de cada dimensión, la narrativa se organiza en ``capítulos'' con títulos descriptivos, texto explicativo y separadores visuales (\texttt{st.divider()}) que guían al usuario a través de un análisis progresivo: de lo general a lo particular.
+
+\subsection{Responsividad y Rendimiento}
+
+\begin{itemize}
+  \item \textbf{Carga diferida}: El módulo de mercado financiero (163K registros) usa \texttt{load\_dynamic\_market\_data()} que solo consulta las empresas seleccionadas, no la tabla completa.
+  \item \textbf{Caché multi-nivel}: Carátulas de juegos en JSON local + \texttt{@st.cache\_data} para consultas SQL + geocode\_cache en SQLite.
+  \item \textbf{Layout adaptativo}: \texttt{st.columns()} con proporciones dinámicas y \texttt{use\_container\_width=True} en todos los gráficos Plotly.
+\end{itemize}
+
+
+% ████████████████████████████████████████████████████████████████████████████
+%  5. DISCUSIÓN, CONCLUSIONES Y POSIBLES MEJORAS (máx. 2 páginas)
+% ████████████████████████████████████████████████████████████████████████████
+\newpage
+\section{Discusión, Conclusiones y Posibles Mejoras}
+
+\subsection{Discusión}
+
+El proyecto demuestra que es posible integrar datos de 6 fuentes heterogéneas en un dashboard cohesivo que responda a preguntas analíticas complejas sobre la industria del videojuego. Las principales conclusiones analíticas derivadas de las visualizaciones son:
+
+\begin{enumerate}
+  \item \textbf{Dominancia indiscutible}: La industria del videojuego es, por ingresos, la mayor industria del entretenimiento mundial, con un crecimiento acelerado post-2020.
+  \item \textbf{Concentración geográfica}: El desarrollo se concentra en Norteamérica (EE.UU., Canadá), Europa Occidental (UK, Francia, Alemania) y Japón, pero el mayor mercado de consumo está en Asia-Pacífico.
+  \item \textbf{Oligopolio corporativo}: 12 conglomerados controlan la mayoría de los estudios notables. Sony destaca en calidad media (Metacritic 82.7), mientras que EA lidera en volumen de reviews/popularidad.
+  \item \textbf{Evolución de géneros}: Los géneros Action, Sports y Shooter dominan las ventas acumuladas históricas (más de 1.000M de copias cada uno), mientras que géneros como Puzzle o Strategy mantienen nichos de alta calidad con menor volumen.
+  \item \textbf{Review Bombing}: Se confirma la existencia de una discrepancia sistemática entre la crítica profesional y la recepción de usuarios en ciertos títulos, cuantificable mediante el \textit{Review\_Bombing\_Index}.
+\end{enumerate}
+
+\subsection{Limitaciones}
+
+\begin{itemize}
+  \item \textbf{Cobertura temporal de ventas}: VGChartz cubre hasta 2020 y no incluye ventas digitales completas. Los datos post-2020 requerirían fuentes premium (NPD/Circana, Sensor Tower).
+  \item \textbf{Sesgo de catálogo}: RAWG tiene mejor cobertura de títulos occidentales que japoneses/asiáticos, lo que puede subrepresentar el mercado móvil asiático.
+  \item \textbf{Datos de mercado curados}: Los ingresos regionales y datos de jugadores por país provienen de informes sectoriales compilados manualmente, no de una API en tiempo real.
+  \item \textbf{Actualización}: El pipeline requiere re-ejecución manual para actualizar datos. No hay programación automática (\textit{cron}).
+\end{itemize}
+
+\subsection{Posibles Mejoras}
+
+\begin{enumerate}
+  \item \textbf{Despliegue web}: Publicar en Streamlit Community Cloud o un servidor propio para acceso sin instalación local.
+  \item \textbf{Series temporales de ventas}: Integrar datos de Steam Spy o SteamDB para cubrir el mercado digital PC post-2020.
+  \item \textbf{NLP sobre reseñas}: Aplicar análisis de sentimiento a las reseñas textuales de usuarios para enriquecer el análisis de Review Bombing con evidencia lingüística.
+  \item \textbf{Predicción}: Implementar un modelo de regresión que prediga ventas basándose en Metacritic, género, publisher y plataforma.
+  \item \textbf{Internacionalización}: Añadir soporte multiidioma (ES/EN) dado el carácter global de la audiencia objetivo.
+  \item \textbf{Accesibilidad}: Implementar paletas alternativas para daltonismo (simulación con filtros de tipo Deuteranopia/Protanopia) y mejorar el contraste WCAG en etiquetas de texto.
+  \item \textbf{Dashboard en tiempo real}: Conectar yfinance en modo streaming para actualizar cotizaciones bursátiles en tiempo real durante las sesiones de análisis.
+\end{enumerate}
+
+\subsection{Conclusión Final}
+
+Este proyecto ha demostrado que la combinación de un pipeline ETL robusto con técnicas de visualización avanzadas ---animaciones temporales, cuadrantes estratégicos, glassmorfismo y paletas semánticas--- permite transformar datos dispersos y heterogéneos de la industria del videojuego en una narrativa visual cohesiva, interactiva y analíticamente rica. Las decisiones de diseño no fueron meramente estéticas: cada paleta de color, cada tipo de gráfico y cada micro-interacción se seleccionaron para maximizar la transmisión de información al público objetivo.
+
+
+% ████████████████████████████████████████████████████████████████████████████
+%  APÉNDICE: Instrucciones de Ejecución
+% ████████████████████████████████████████████████████████████████████████████
+\newpage
+\appendix
+\section{Instrucciones de Ejecución}
+
+\subsection{Requisitos}
+
+\begin{itemize}
+  \item Python 3.10 o superior
+  \item Las dependencias listadas en \texttt{requirements.txt}
+  \item Claves API: \texttt{RAWG\_API\_KEY}, \texttt{IGDB\_CLIENT\_ID}, \texttt{IGDB\_CLIENT\_SECRET} (en fichero \texttt{.env})
+\end{itemize}
+
+\subsection{Instalación}
+
+\begin{lstlisting}[language=bash]
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+\end{lstlisting}
+
+\subsection{Ejecución del Pipeline}
+
+\begin{lstlisting}[language=bash]
+python main.py                    # Pipeline completo
+python main.py --skip-extract     # Reutilizar datos crudos existentes
+python main.py --skip-games       # Saltar la descarga de RAWG
+\end{lstlisting}
+
+\subsection{Lanzar el Dashboard}
+
+\begin{lstlisting}[language=bash]
+streamlit run dashboard/app.py
+\end{lstlisting}
+
+El dashboard se abrirá en \texttt{http://localhost:8501}.
+
+\subsection{Estructura del Repositorio}
+
+\begin{lstlisting}[language=bash]
+.
+|-- config.py                # Configuracion centralizada
+|-- main.py                  # Orquestador del pipeline ETL
+|-- requirements.txt         # Dependencias Python
+|-- scripts/                 # Modulos ETL (extraccion, transformacion, carga)
+|   |-- etl_vgchartz.py      # ETL de ventas VGChartz
+|   |-- etl_games_rawg.py    # ETL de catalogo RAWG
+|   |-- etl_igdb.py          # ETL de jerarquia corporativa IGDB
+|   |-- get_gameDevMap.py    # Scraper de GameDevMap
+|   |-- get_market_data.py   # Descarga de datos bursatiles
+|   |-- build_db.py          # Constructor de la base de datos
+|   `-- ...
+|-- dashboard/               # Modulos de visualizacion (Streamlit)
+|   |-- app.py               # Punto de entrada del dashboard
+|   |-- view_global.py       # Dimension: Vision Global
+|   |-- view_map.py          # Dimension: Mapa Geografico
+|   |-- view_platforms.py    # Dimension: Plataformas
+|   |-- view_market.py       # Dimension: Mercado Financiero
+|   |-- view_corporate.py    # Dimension: Estructura Corporativa
+|   |-- view_community.py    # Dimension: Comunidad y Recepcion
+|   |-- view_hall_of_fame.py # Dimension: Salon de la Fama
+|   |-- charts_*.py          # Funciones de graficos por dimension
+|   `-- assets/              # Logos, imagenes de consolas
+|-- data/
+|   |-- raw/                 # Datos crudos descargados
+|   |-- processed/           # Datos transformados
+|   `-- database/            # videogames.db (SQLite)
+`-- docs/
+    `-- memoria.tex          # Este documento
+\end{lstlisting}
+
+\end{document}
