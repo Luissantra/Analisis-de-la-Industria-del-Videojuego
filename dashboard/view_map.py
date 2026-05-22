@@ -128,7 +128,7 @@ def render_map_module(filtered_df, mode="Producción"):
             )
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
         
         st.divider()
         
@@ -156,7 +156,7 @@ def render_map_module(filtered_df, mode="Producción"):
                 height=350,
                 coloraxis_showscale=False
             )
-            st.plotly_chart(fig_tree, use_container_width=True)
+            st.plotly_chart(fig_tree, width="stretch")
             
         with col_r:
             # Bar chart de los países con mayor ARPU usando paleta YlOrRd
@@ -186,7 +186,7 @@ def render_map_module(filtered_df, mode="Producción"):
                 yaxis=dict(categoryorder="total ascending"),
                 xaxis=dict(showgrid=True, gridcolor="rgba(148,163,184,0.08)")
             )
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, width="stretch")
             
     else:
         # Modo Producción (actual)
@@ -275,7 +275,7 @@ def render_map_module(filtered_df, mode="Producción"):
                     height=350,
                     template="plotly_dark"
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width="stretch")
                 
             with col_right:
                 region_data = filtered_df['Region'].value_counts().reset_index()
@@ -323,7 +323,7 @@ def render_map_module(filtered_df, mode="Producción"):
                     template="plotly_dark",
                     showlegend=False
                 )
-                st.plotly_chart(fig_region, use_container_width=True)
+                st.plotly_chart(fig_region, width="stretch")
                 
         else:
             st.info("No se encontraron estudios con los filtros actuales.")

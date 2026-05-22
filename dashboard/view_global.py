@@ -154,7 +154,7 @@ def render_global_vision_module():
     df_industry = get_industry_comparison_data()
     if not df_industry.empty:
         fig_intersectoral = create_intersectoral_chart(df_industry)
-        st.plotly_chart(fig_intersectoral, use_container_width=True)
+        st.plotly_chart(fig_intersectoral, width="stretch")
         st.info("💡 **Dato Clave**: La industria del videojuego experimentó un crecimiento sin precedentes a partir del año 2020 debido al confinamiento global, consolidando su posición como la mayor industria de entretenimiento del planeta, superando con creces al cine y la música combinados.")
     else:
         st.info("ℹ️ No se pudieron cargar los datos de comparación intersectorial.")
@@ -173,7 +173,7 @@ def render_global_vision_module():
     fig_area = create_genre_evolution_chart(df_evolution)
     
     if fig_area:
-        st.plotly_chart(fig_area, use_container_width=True)
+        st.plotly_chart(fig_area, width="stretch")
     else:
         st.info("ℹ️ No hay suficientes datos para generar el gráfico de evolución de géneros.")
         
@@ -190,7 +190,7 @@ def render_global_vision_module():
     fig_portfolio = create_genre_and_score_chart(df_games_all)
     
     if fig_portfolio:
-        st.plotly_chart(fig_portfolio, use_container_width=True)
+        st.plotly_chart(fig_portfolio, width="stretch")
     else:
         st.info("ℹ️ Ejecuta `etl_games_rawg.py` para habilitar gráficos de géneros y valoraciones.")
         
@@ -207,6 +207,6 @@ def render_global_vision_module():
     df_race = get_sales_race_data()
     if not df_race.empty:
         fig_race = create_genre_race_chart(df_race)
-        st.plotly_chart(fig_race, use_container_width=True)
+        st.plotly_chart(fig_race, width="stretch")
     else:
         st.info("ℹ️ No hay datos de ventas de VGChartz suficientes para animar la carrera de géneros.")

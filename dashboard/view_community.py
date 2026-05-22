@@ -59,7 +59,7 @@ def render_community_module():
             cruza la duración con la calidad media, evaluando el valor real de diversión percibido.
             """)
             fig_play = create_playtime_scatter_chart(df_filtered)
-            if fig_play: st.plotly_chart(fig_play, use_container_width=True)
+            if fig_play: st.plotly_chart(fig_play, width="stretch")
         
             st.divider()
             
@@ -69,7 +69,7 @@ def render_community_module():
             son éxitos unánimes, mientras que los alejados de la línea revelan discrepancias de criterio.
             """)
             fig_scatter = plot_critic_vs_user(df_filtered)
-            st.plotly_chart(fig_scatter, use_container_width=True)
+            st.plotly_chart(fig_scatter, width="stretch")
             
             st.divider()
             
@@ -79,7 +79,7 @@ def render_community_module():
             inferior a la de la crítica, a menudo señal de controversias técnicas, políticas o de monetización.
             """)
             fig_bar = plot_top_controversies(df_filtered)
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, width="stretch")
         
             st.divider()
         
@@ -89,7 +89,7 @@ def render_community_module():
             profundamente con la comunidad.
             """)
             fig_acclaim = plot_top_acclaimed(df_filtered)
-            st.plotly_chart(fig_acclaim, use_container_width=True)
+            st.plotly_chart(fig_acclaim, width="stretch")
         
             st.divider()
         
@@ -101,7 +101,7 @@ def render_community_module():
             
             fig_social = plot_social_traction(df_filtered)
             if fig_social:
-                st.plotly_chart(fig_social, use_container_width=True)
+                st.plotly_chart(fig_social, width="stretch")
                 
             st.divider()
             st.markdown("### 📊 Capítulo 6: El Cuadrante del Hype (Popularidad vs. Ventas)")
@@ -117,7 +117,7 @@ def render_community_module():
             
             fig_hype_sales = create_hype_vs_sales_chart(df_sales)
             if fig_hype_sales is not None:
-                st.plotly_chart(fig_hype_sales, use_container_width=True)
+                st.plotly_chart(fig_hype_sales, width="stretch")
             else:
                 st.info("ℹ️ No hay datos de ventas disponibles para el conglomerado o filtros seleccionados.")
                 

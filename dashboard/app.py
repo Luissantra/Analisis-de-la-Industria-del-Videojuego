@@ -194,7 +194,7 @@ elif menu == "Mapa de estudios":
             else:
                 display_cols = ["Studio Name", "City", "Country", "Region", "studio_tier"]
                 
-            st.dataframe(filtered_df[display_cols], use_container_width=True, hide_index=True)
+            st.dataframe(filtered_df[display_cols], width="stretch", hide_index=True)
     else:
         # Renderizamos el mapa en modo Mercado
         render_map_module(None, mode="Mercado")

@@ -113,15 +113,15 @@ def render_corporate_module():
                 
                 # Botón terciario (sin fondo ni bordes) para que actúe como una etiqueta de texto clicable
                 if is_selected:
-                    st.button(f"**{display_name}**", key=f"btn_{i}", help=empresa, disabled=True, use_container_width=True, type="primary")
+                    st.button(f"**{display_name}**", key=f"btn_{i}", help=empresa, disabled=True, width="stretch", type="primary")
                 else:
-                    st.button(display_name, key=f"btn_{i}", help=empresa, on_click=seleccionar_matriz, args=(empresa,), use_container_width=True, type="tertiary")
+                    st.button(display_name, key=f"btn_{i}", help=empresa, on_click=seleccionar_matriz, args=(empresa,), width="stretch", type="tertiary")
 
     # 2. Control Superior
     col_v, col_btn = st.columns([4, 1])
     with col_btn:
         if seleccion != "Global":
-            if st.button("🔄 Ver Todas", use_container_width=True):
+            if st.button("🔄 Ver Todas", width="stretch"):
                 seleccionar_matriz("Global")
                 st.rerun()
                 
@@ -141,7 +141,7 @@ def render_corporate_module():
         fig = create_sunburst_chart(df_corp_all)
         # Capturamos el evento de clic nativo (soportado en Streamlit >= 1.35)
         try:
-            evento = st.plotly_chart(fig, use_container_width=True, on_select="rerun")
+            evento = st.plotly_chart(fig, width="stretch", on_select="rerun")
             if evento and "selection" in evento and evento["selection"].get("points"):
                 clicked_label = evento["selection"]["points"][0].get("label")
                 # Si el usuario hace clic en un conglomerado, sincronizamos la tarjeta
@@ -150,7 +150,7 @@ def render_corporate_module():
                     st.rerun()
         except TypeError:
             # Fallback por si la versión de Streamlit es antigua y no soporta on_select
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
             
         st.write("---")
         
@@ -161,7 +161,7 @@ def render_corporate_module():
         """)
         fig_dist_global = create_score_distribution_chart(df_corp_all, is_global=True)
         if fig_dist_global:
-            st.plotly_chart(fig_dist_global, use_container_width=True)
+            st.plotly_chart(fig_dist_global, width="stretch")
             
         st.write("---")
         
@@ -172,7 +172,7 @@ def render_corporate_module():
         """)
         df_games_all = get_all_games_data()
         fig_esrb = create_esrb_distribution_chart(df_games_all)
-        if fig_esrb: st.plotly_chart(fig_esrb, use_container_width=True)
+        if fig_esrb: st.plotly_chart(fig_esrb, width="stretch")
         
         st.write("---")
         
@@ -196,7 +196,7 @@ def render_corporate_module():
             
         fig_magic = create_magic_quadrant_chart(df_magic_input)
         if fig_magic is not None:
-            st.plotly_chart(fig_magic, use_container_width=True)
+            st.plotly_chart(fig_magic, width="stretch")
     else:
         st.subheader(f"🔍 Análisis Estructural: {seleccion}")
         df_filtrado = get_conglomerate_data(seleccion)
@@ -217,7 +217,7 @@ def render_corporate_module():
         
         with col_grafico:
             fig = create_treemap_chart(df_filtrado)
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
             
         with col_lista:
             # Preparamos el dataframe para visualización
@@ -234,7 +234,7 @@ def render_corporate_module():
             
             st.dataframe(
                 df_display,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=400 
             )
@@ -249,7 +249,7 @@ def render_corporate_module():
         with col_timeline:
             fig_timeline = create_acquisition_timeline_chart(df_filtrado, color=brand_color)
             if fig_timeline:
-                st.plotly_chart(fig_timeline, use_container_width=True)
+                st.plotly_chart(fig_timeline, width="stretch")
             else:
                 st.info("ℹ️ No hay suficientes datos de años registrados para este conglomerado.")
                 
@@ -257,14 +257,14 @@ def render_corporate_module():
             st.markdown("##### 🎯 Consistencia de Calidad")
             fig_dist = create_score_distribution_chart(df_filtrado, color=brand_color)
             if fig_dist:
-                st.plotly_chart(fig_dist, use_container_width=True)
+                st.plotly_chart(fig_dist, width="stretch")
             else:
                 st.info("ℹ️ Ejecuta `etl_games_rawg.py` para obtener datos de Metacritic.")
                 
         fig_pie = create_genre_pie_chart(df_filtrado, color=brand_color)
         if fig_pie:
             st.markdown("##### 🎭 Diversificación por Género")
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_pie, width="stretch")
 
         # Para el top 10 necesitamos los juegos de ese conglomerado
         df_games_all = get_all_games_data()
@@ -276,7 +276,7 @@ def render_corporate_module():
         st.markdown("### 👥 Capítulo 3: Target de Audiencia Específico")
         st.markdown(f"Analizamos el perfil de edad y el público objetivo del portfolio de **{seleccion}**.")
         fig_esrb_spec = create_esrb_distribution_chart(df_games_filt)
-        if fig_esrb_spec: st.plotly_chart(fig_esrb_spec, use_container_width=True)
+        if fig_esrb_spec: st.plotly_chart(fig_esrb_spec, width="stretch")
         else: st.info("ℹ️ No hay datos suficientes de clasificación ESRB para este conglomerado.")
 
         st.write("---")

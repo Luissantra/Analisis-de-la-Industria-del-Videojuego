@@ -119,7 +119,7 @@ def render_platforms_module():
     with tab_roadmap:
         st.markdown("Cada carril representa un fabricante. El tamaño de los puntos indica el éxito comercial (ventas globales).")
         fig_roadmap = create_roadmap_timeline(df_filtered)
-        evento = st.plotly_chart(fig_roadmap, use_container_width=True, on_select="rerun", key="roadmap_chart")
+        evento = st.plotly_chart(fig_roadmap, width="stretch", on_select="rerun", key="roadmap_chart")
         
     with tab_gantt:
         st.markdown("""
@@ -168,7 +168,7 @@ def render_platforms_module():
             st.markdown("<br>", unsafe_allow_html=True)
             
         fig_gantt = create_lifespan_gantt_chart(df_filtered)
-        st.plotly_chart(fig_gantt, use_container_width=True)
+        st.plotly_chart(fig_gantt, width="stretch")
     
     st.divider()
     
@@ -250,10 +250,10 @@ def render_platforms_module():
     c2_1, c2_2 = st.columns(2)
     with c2_1:
         fig_ranking = create_sales_ranking_chart(df_filtered)
-        st.plotly_chart(fig_ranking, use_container_width=True)
+        st.plotly_chart(fig_ranking, width="stretch")
     with c2_2:
         fig_market_share = create_generation_market_share_chart(df_filtered)
-        st.plotly_chart(fig_market_share, use_container_width=True)
+        st.plotly_chart(fig_market_share, width="stretch")
 
     st.divider()
 
@@ -265,6 +265,6 @@ def render_platforms_module():
     df_games_platforms = load_games_platforms_data()
     if not df_games_platforms.empty:
         fig_catalog = create_catalog_distribution_chart(df_games_platforms)
-        st.plotly_chart(fig_catalog, use_container_width=True)
+        st.plotly_chart(fig_catalog, width="stretch")
     else:
         st.warning("⚠️ No se encontraron datos de catálogo. Ejecuta primero 'python scripts/etl_games_rawg.py'")

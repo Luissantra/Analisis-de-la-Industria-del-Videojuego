@@ -35,7 +35,7 @@ Dashboard analítico interactivo construido con **Streamlit** y **Plotly** que e
 | 🌍 **Visión Global** | `view_global.py` | Comparativa intersectorial, Stacked Area Chart de géneros, Scatter de portfolio, **Bar Chart Race de ventas acumuladas** |
 | 🗺️ **Mapa de Estudios** | `view_map.py` | Mapa Folium con clusters (6.642 estudios), Choropleth de ingresos (Tealgrn), Treemap regional, ARPU heatmap (YlOrRd), KPIs semánticos |
 | 🕹️ **Plataformas** | `view_platforms.py` | Timeline Gantt de consolas, Ranking de ventas, Distribución de catálogo |
-| 📈 **Mercado Financiero** | `view_market.py` | Series temporales OHLCV, Retorno acumulado, Benchmarks (S&P 500, NASDAQ, Nikkei 225) |
+| 📈 **Mercado Financiero** | `view_market.py` | Series temporales OHLCV, Retorno acumulado, Benchmarks (S&P 500, Nasdaq Composite) |
 | 🏢 **Estructura Corporativa** | `view_corporate.py` | Sunburst jerárquico, Galería de logos, **Cuadrante Mágico** (12 conglomerados), Treemap de portfolio |
 | 🗣️ **Comunidad** | `view_community.py` | Scatter Crítica vs. Usuario, Review Bombing Index, **Cuadrante del Hype** (ventas × calidad × popularidad) |
 | 🏆 **Salón de la Fama** | `view_hall_of_fame.py` | Tarjetas con carátulas RAWG, rankings de excelencia |
@@ -75,7 +75,7 @@ Dashboard analítico interactivo construido con **Streamlit** y **Plotly** que e
 | **IGDB** | API REST (Twitch) | `etl_igdb.py` | 197 | Jerarquía corporativa: empresa matriz, logo, descripción, juego estrella |
 | **VGChartz** | CSV (Kaggle) | `etl_vgchartz.py` | 17.570 | Ventas históricas por consola con desglose regional (NA/JP/PAL/Other) |
 | **GameDevMap** | Web Scraping | `get_gameDevMap.py` | 6.642 | Geolocalización GPS de estudios de desarrollo worldwide |
-| **Yahoo Finance** | API (yfinance) | `get_market_data.py` | 163.709 | Cotizaciones diarias OHLCV de 11 empresas gaming + 3 índices |
+| **Yahoo Finance** | API (yfinance) | `get_market_data.py` | 163.709 | Cotizaciones diarias OHLCV de 26 empresas gaming + 2 índices benchmark |
 | **Manual/Config** | JSON curado | — | — | Datos de mercado global, plataformas, comparativas sectoriales |
 
 ---
@@ -207,13 +207,15 @@ El dashboard se abrirá automáticamente en `http://localhost:8501`.
 ├── config_data/              # Archivos de configuración JSON
 │   ├── tickers.json          # Tickers bursátiles y categorías
 │   ├── platforms.json        # Metadatos de consolas
-│   └── market_visuals.json   # Datos de mercado global curados
+│   ├── market_visuals.json   # Datos de mercado global curados
+│   ├── gaming_markets_geo.json # Coordenadas y metadatos de mercados geográficos
+│   ├── goty_winners.json     # Listado histórico de ganadores del GOTY
+│   └── industry_comparison.json # Comparativa intersectorial histórica
 │
-├── docs/
-│   ├── memoria.tex           # Fuente LaTeX de la memoria académica
-│   └── memoria.pdf           # Memoria compilada (PDF)
-│
-└── notebooks/                # Notebooks de exploración (desarrollo)
+└── docs/                     # Documentación académica (Local, excluida en .gitignore)
+    ├── memoria.tex           # Fuente LaTeX de la memoria académica
+    └── memoria.pdf           # Memoria compilada (PDF)
+
 ```
 
 ---

@@ -28,10 +28,7 @@ data/
 # Archivos del sistema operativo (macOS)
 .DS_Store
 .AppleDouble
-.LSOverridedocs/*.aux
-docs/*.log
-docs/*.out
-docs/*.toc
-docs/*.fls
-docs/*.fdb_latexmk
-docs/*.synctex.gz
+.LSOverride
+
+# Documentación académica local (excluida del repo)
+docs/

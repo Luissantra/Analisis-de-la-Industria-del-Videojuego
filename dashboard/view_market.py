@@ -368,7 +368,7 @@ def render_market_module(df_market, selected_companies, benchmark="Ninguno"):
     
     if "Comparativa" in vista:
         fig_line = create_comparison_line_chart(df_processed, timeframe, benchmark, dynamic_events, metrica_y)
-        st.plotly_chart(fig_line, use_container_width=True)
+        st.plotly_chart(fig_line, width="stretch")
         
         # Cronología visual de hitos en expander compacto
         with st.expander("📜 Cronología de Eventos Relevantes", expanded=False):
@@ -381,10 +381,10 @@ def render_market_module(df_market, selected_companies, benchmark="Ninguno"):
             for i, company in enumerate(selected_companies):
                 with tabs[i]:
                     fig_candle = create_candlestick_chart(df_processed, company, timeframe, dynamic_events)
-                    st.plotly_chart(fig_candle, use_container_width=True)
+                    st.plotly_chart(fig_candle, width="stretch")
         else:
             fig_candle = create_candlestick_chart(df_processed, selected_companies[0], timeframe, dynamic_events)
-            st.plotly_chart(fig_candle, use_container_width=True)
+            st.plotly_chart(fig_candle, width="stretch")
 
     with st.expander("Ver tabla de datos puros del período"):
-        st.dataframe(df_processed.sort_values(by=['Date', 'Company Name'], ascending=[False, True]), use_container_width=True, hide_index=True)
+        st.dataframe(df_processed.sort_values(by=['Date', 'Company Name'], ascending=[False, True]), width="stretch", hide_index=True)
