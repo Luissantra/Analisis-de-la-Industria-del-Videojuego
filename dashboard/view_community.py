@@ -134,7 +134,7 @@ def render_community_module():
                 timeframe_option = st.selectbox(
                     "Periodo temporal de análisis:",
                     ["Últimos 12 meses", "Últimos 5 años", "Últimos 15 años", "Histórico (Desde 2004)"],
-                    index=2
+                    index=1
                 )
                 
             # Mapeo de opciones de tiempo de Google Trends
