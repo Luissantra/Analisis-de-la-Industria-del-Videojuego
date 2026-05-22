@@ -155,7 +155,6 @@ def render_global_vision_module():
     if not df_industry.empty:
         fig_intersectoral = create_intersectoral_chart(df_industry)
         st.plotly_chart(fig_intersectoral, width="stretch")
-        st.info("💡 **Dato Clave**: La industria del videojuego experimentó un crecimiento sin precedentes a partir del año 2020 debido al confinamiento global, consolidando su posición como la mayor industria de entretenimiento del planeta, superando con creces al cine y la música combinados.")
     else:
         st.info("ℹ️ No se pudieron cargar los datos de comparación intersectorial.")
         

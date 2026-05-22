@@ -154,10 +154,11 @@ def render_corporate_module():
             
         st.write("---")
         
-        st.markdown("### 🎯 Capítulo 2: Consistencia y Distribución de Calidad")
+        st.markdown("### 🎯 Capítulo 2: Distribución de Calidad Crítica")
         st.markdown("""
-        ¿Quién es el publisher más consistente? La distribución de notas de Metacritic nos revela si un conglomerado 
-        apuesta por el **volumen** (muchos juegos con notas variadas) o por la **excelencia curada** (pocos juegos, todos sobresalientes).
+        Este gráfico de violín representa la distribución y dispersión de las valoraciones de Metacritic a nivel global. 
+        Nos permite observar la consistencia general del ecosistema, revelando si la producción de la industria se concentra 
+        en títulos promedio o si cuenta con una distribución equilibrada hacia la excelencia crítica.
         """)
         fig_dist_global = create_score_distribution_chart(df_corp_all, is_global=True)
         if fig_dist_global:

@@ -180,10 +180,10 @@ def render_map_module(filtered_df, mode="Producción"):
                 textfont=dict(size=11, color="#E2E8F0")
             )
             fig_bar.update_layout(
-                margin=dict(t=40, b=10, l=10, r=10),
+                margin=dict(t=40, b=10, l=70, r=10),
                 height=350,
                 coloraxis_showscale=False,
-                yaxis=dict(categoryorder="total ascending"),
+                yaxis=dict(categoryorder="total ascending", automargin=True),
                 xaxis=dict(showgrid=True, gridcolor="rgba(148,163,184,0.08)")
             )
             st.plotly_chart(fig_bar, width="stretch")

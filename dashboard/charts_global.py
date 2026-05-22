@@ -85,26 +85,7 @@ def create_intersectoral_chart(df: pd.DataFrame) -> go.Figure:
             )
         )
 
-    # ── Anotación: efecto pandemia en 2020 ──
-    if 2020 in df["year"].values:
-        gaming_2020 = df.loc[df["year"] == 2020, "gaming"].iloc[0]
-        fig.add_annotation(
-            x=2020,
-            y=gaming_2020,
-            text="Efecto pandemia",
-            showarrow=True,
-            arrowhead=2,
-            arrowsize=1.2,
-            arrowwidth=2,
-            arrowcolor="#8B5CF6",
-            ax=50,
-            ay=-50,
-            font=dict(size=13, color="#C4B5FD", family="Inter, sans-serif"),
-            bgcolor="rgba(139,92,246,0.15)",
-            bordercolor="#8B5CF6",
-            borderwidth=1,
-            borderpad=6,
-        )
+
 
     # ── Layout ──
     fig.update_layout(

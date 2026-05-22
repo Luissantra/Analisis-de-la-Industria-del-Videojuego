@@ -273,7 +273,8 @@ def create_genre_pie_chart(df, color="#0070FF"):
 
 def create_acquisition_timeline_chart(df, color="#0070FF"):
     """
-    Crea un gráfico de línea de tiempo de los años de adquisición/fundación de los estudios.
+    Crea un gráfico combinado que muestra las adquisiciones anuales (Barras)
+    y el crecimiento acumulado de estudios a lo largo del tiempo (Área translúcida).
     """
     # 1. Filtrar valores no válidos o desconocidos
     df_time = df[~df['Acquisition_Year'].isin(['No registrado', 'N/A', 'Desconocido', None])].copy()
@@ -285,31 +286,79 @@ def create_acquisition_timeline_chart(df, color="#0070FF"):
     df_time = df_time.dropna(subset=['Acquisition_Year'])
     df_time['Acquisition_Year'] = df_time['Acquisition_Year'].astype(int)
 
-    # 3. Agrupar por año contando estudios y guardando sus nombres para el tooltip
+    # 3. Agrupar por año contando estudios y ordenando
     timeline_stats = df_time.groupby('Acquisition_Year').agg(
         Count=('Studio Name', 'count'),
         Studios=('Studio Name', lambda x: '<br> • '.join(x))
     ).reset_index()
+    
+    timeline_stats = timeline_stats.sort_values('Acquisition_Year')
+    timeline_stats['Cumulative_Count'] = timeline_stats['Count'].cumsum()
 
-    # 4. Crear el gráfico de barras (Timeline)
-    fig = px.bar(
-        timeline_stats,
-        x='Acquisition_Year',
-        y='Count',
-        template="plotly_dark",
-        custom_data=['Studios']
-    )
+    # 4. Construir el gráfico combinado
+    fig = go.Figure()
 
-    fig.update_traces(
-        marker_color=color,
-        hovertemplate="<b>Año: %{x}</b><br>Adquisiciones/Fundaciones: %{y}<br><br><b>Estudios:</b><br> • %{customdata[0]}<extra></extra>"
-    )
+    # Añadir traza de área para el Acumulado
+    # Convertimos el color hexadecimal a RGBA con opacidad baja
+    rgba_color = "rgba(0, 112, 255, 0.15)"
+    if color.startswith("#"):
+        hex_color = color.lstrip('#')
+        if len(hex_color) == 6:
+            r = int(hex_color[0:2], 16)
+            g = int(hex_color[2:4], 16)
+            b = int(hex_color[4:6], 16)
+            rgba_color = f"rgba({r}, {g}, {b}, 0.15)"
+            line_rgba = f"rgba({r}, {g}, {b}, 0.6)"
+        else:
+            line_rgba = color
+    else:
+        line_rgba = color
 
+    fig.add_trace(go.Scatter(
+        x=timeline_stats['Acquisition_Year'],
+        y=timeline_stats['Cumulative_Count'],
+        mode='lines+markers',
+        name='Total Acumulado',
+        fill='tozeroy',
+        fillcolor=rgba_color,
+        line=dict(color=line_rgba, width=2.5, shape='linear'),
+        marker=dict(size=6, color=color),
+        hovertemplate="<b>Año: %{x}</b><br>Estudios Acumulados: %{y}<extra></extra>"
+    ))
+
+    # Añadir traza de barras para Adquisiciones Anuales
+    fig.add_trace(go.Bar(
+        x=timeline_stats['Acquisition_Year'],
+        y=timeline_stats['Count'],
+        name='Nuevos Estudios',
+        marker=dict(
+            color=color,
+            line=dict(color=color, width=0),
+            cornerradius=3
+        ),
+        customdata=timeline_stats['Studios'].to_numpy().reshape(-1, 1),
+        hovertemplate="<b>Año: %{x}</b><br>Nuevos Estudios: %{y}<br><br><b>Incorporaciones:</b><br> • %{customdata[0]}<extra></extra>"
+    ))
+
+    # Configuración de layout
     fig.update_layout(
-        margin=dict(t=20, l=0, r=0, b=20),
+        template="plotly_dark",
+        margin=dict(t=35, l=10, r=10, b=20),
         xaxis_title="Año",
         yaxis_title="Cantidad de Estudios",
-        xaxis=dict(type='category') # Tratar el eje X como categoría para evitar decimales en los años
+        xaxis=dict(type='category', gridcolor="rgba(148,163,184,0.05)"),
+        yaxis=dict(gridcolor="rgba(148,163,184,0.08)", zeroline=False),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="rgba(0,0,0,0)"
+        ),
+        hovermode="x unified"
     )
     return fig
 

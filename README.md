@@ -220,6 +220,17 @@ El dashboard se abrirá automáticamente en `http://localhost:8501`.
 
 ---
 
+## 💅 Últimas Mejoras y Refinamientos (Mayo 2026)
+
+Se han implementado una serie de mejoras críticas para optimizar la usabilidad del dashboard y la fidelidad de sus análisis:
+- **Gráfico Combinado de Expansión Corporativa:** Rediseño completo de la línea de tiempo corporativa (`charts_corporate.py`), combinando barras de incorporaciones anuales de estudios con una capa de área translúcida (15% de opacidad) que representa el crecimiento acumulado del grupo a lo largo del tiempo, bajo una experiencia interactiva `hovermode="x unified"`.
+- **Resolución de Incompatibilidad de PyArrow:** Corrección del error de Pandas/PyArrow (`NotImplementedError`) que bloqueaba la renderización del gráfico al llamar a `.values.reshape` en tooltips con tipos de datos de Arrow. Ahora se maneja mediante `.to_numpy().reshape`, garantizando el correcto funcionamiento en el 100% de los conglomerados.
+- **Rendimiento Bursátil por Defecto:** Modificación en el módulo financiero (`view_market.py`) para activar por defecto la métrica de **Rendimiento (%)** en lugar de Precio (USD), lo que simplifica la visualización comparativa de activos de distinta valoración nominal.
+- **Visualización de Mapas Corregida:** Ampliación del margen izquierdo y habilitación de `automargin=True` en la gráfica horizontal de gasto medio anual por jugador (ARPU en `view_map.py`), impidiendo que nombres de países como **Japan** se vean recortados en el eje Y.
+- **Comparativa Sectorial Aséptica:** Eliminación del recuadro informativo y de la anotación flotante del "Efecto pandemia" de 2020 en el gráfico intersectorial global (`charts_global.py` / `view_global.py`), priorizando una lectura macroeconómica libre de ruido visual.
+
+---
+
 ## 📄 Documentación
 
 La memoria académica completa del proyecto está disponible en [`docs/memoria.pdf`](docs/memoria.pdf). Incluye:

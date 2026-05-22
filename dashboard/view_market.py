@@ -347,7 +347,7 @@ def render_market_module(df_market, selected_companies, benchmark="Ninguno"):
     with col1:
         vista = st.radio("Modo de Análisis:", ["Comparativa", "Velas Japonesas"], horizontal=True)
     with col2:
-        metrica_y = st.radio("Métrica:", ["Precio (USD)", "Rendimiento (%)"], horizontal=True)
+        metrica_y = st.radio("Métrica:", ["Precio (USD)", "Rendimiento (%)"], index=1, horizontal=True)
     with col3:
         # Cambiamos el slider por botones de radio horizontales, el estándar en apps de finanzas
         timeframe = st.radio(
