@@ -220,17 +220,6 @@ El dashboard se abrirá automáticamente en `http://localhost:8501`.
 
 ---
 
-## 📄 Documentación
-
-La memoria académica completa del proyecto está disponible en [`docs/memoria.pdf`](docs/memoria.pdf). Incluye:
-
-- Planteamiento del problema y objetivos
-- Preparación de los datos (preprocesado)
-- Procesado y análisis de cada dimensión
-- Decisiones de diseño visual justificadas
-- Discusión, conclusiones y posibles mejoras
-
----
 
 ## 🛠️ Stack Tecnológico
 
