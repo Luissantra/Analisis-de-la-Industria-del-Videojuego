@@ -1,10 +1,8 @@
 # 🎮 Análisis de la Industria del Videojuego — Dashboard Interactivo
 
-[![Streamlit App](https://static.streamlit.io/badge_svg.svg)](https://videogame-industry-analysis.streamlit.app)
-
 Dashboard analítico interactivo construido con **Streamlit** y **Plotly** que explora la industria global del videojuego desde 7 dimensiones complementarias, alimentado por un pipeline ETL end-to-end que integra 6 fuentes de datos heterogéneas en una base de datos relacional SQLite.
 
-> 🚀 **¡Despliegue en la Nube!** La aplicación se encuentra en producción y puede ser consultada de forma directa y libre de costes en: **[videogame-industry-analysis.streamlit.app](https://videogame-industry-analysis.streamlit.app)**
+> 🚀 **Desplegado en la nube:** La aplicación se encuentra en producción y puede ser consultada de forma directa en: **[videogame-industry-analysis.streamlit.app](https://videogame-industry-analysis.streamlit.app)**
 
 ---
 
