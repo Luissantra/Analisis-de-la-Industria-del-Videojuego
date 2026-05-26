@@ -281,9 +281,10 @@ def create_acquisition_timeline_chart(df, color="#0070FF"):
     if df_time.empty:
         return None
 
-    # 2. Asegurar que el año es numérico
+    # 2. Asegurar que el año es numérico y está en un rango razonable (evitando nulos codificados de PyArrow/pandas)
     df_time['Acquisition_Year'] = pd.to_numeric(df_time['Acquisition_Year'], errors='coerce')
     df_time = df_time.dropna(subset=['Acquisition_Year'])
+    df_time = df_time[(df_time['Acquisition_Year'] >= 1950) & (df_time['Acquisition_Year'] <= 2050)]
     df_time['Acquisition_Year'] = df_time['Acquisition_Year'].astype(int)
 
     # 3. Agrupar por año contando estudios y ordenando
@@ -571,32 +572,32 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
         ]
     )
     
-    # Calcular posiciones científicas para centrar las anotaciones de los cuadrantes
-    x_left = x_min + (mean_pop - x_min) * 0.5
-    x_right = mean_pop + (x_max - mean_pop) * 0.5
-    y_bottom = y_min + (mean_meta - y_min) * 0.5
-    y_top = mean_meta + (y_max - mean_meta) * 0.5
+    # Calcular posiciones más pegadas a las esquinas para no entorpecer los puntos centrales de la gráfica
+    x_left_corner = x_min + (mean_pop - x_min) * 0.25
+    x_right_corner = x_max - (x_max - mean_pop) * 0.25
+    y_bottom_corner = y_min + (mean_meta - y_min) * 0.15
+    y_top_corner = y_max - (y_max - mean_meta) * 0.15
     
     fig.add_annotation(
-        x=x_right, y=y_top,
+        x=x_right_corner, y=y_top_corner,
         text="👑 LÍDERES<br><sub>Alta Calidad & Alta Popularidad</sub>",
         showarrow=False, font=dict(color="#81C784", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(129,199,132,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=x_left, y=y_top,
+        x=x_left_corner, y=y_top_corner,
         text="💎 VISIONARIOS<br><sub>Alta Calidad & Menor Difusión</sub>",
         showarrow=False, font=dict(color="#64B5F6", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(100,181,246,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=x_right, y=y_bottom,
+        x=x_right_corner, y=y_bottom_corner,
         text="📢 RETADORES<br><sub>Gran Difusión & Calidad Media</sub>",
         showarrow=False, font=dict(color="#FFD54F", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(255,213,79,0.3)", borderwidth=1, borderpad=4
     )
     fig.add_annotation(
-        x=x_left, y=y_bottom,
+        x=x_left_corner, y=y_bottom_corner,
         text="🎯 NICHO Y OPERADORES<br><sub>Foco Específico & Calidad Media</sub>",
         showarrow=False, font=dict(color="#E57373", size=10),
         bgcolor="rgba(15,23,42,0.85)", bordercolor="rgba(229,115,115,0.3)", borderwidth=1, borderpad=4
