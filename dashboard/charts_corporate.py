@@ -152,7 +152,7 @@ def create_treemap_chart(df):
     )
     return fig
 
-def create_genre_and_score_chart(df, color="#0070FF"):
+def create_genre_and_score_chart(df, color="#0070FF", color_map=None):
     """
     Crea una matriz de portfolio (Gráfico de Burbujas) cruzando el volumen 
     de juegos por género con su calidad promedio (Metacritic).
@@ -188,7 +188,10 @@ def create_genre_and_score_chart(df, color="#0070FF"):
     # Matriz de Portfolio (Bubble Chart)
     fig = px.scatter(
         genre_stats, x='Count', y='Avg_Metacritic', size='Count',
-        color='Avg_Metacritic', color_continuous_scale='RdYlGn', range_color=[40, 95],
+        color='Genre_List' if color_map else 'Avg_Metacritic', 
+        color_discrete_map=color_map if color_map else None,
+        color_continuous_scale='RdYlGn' if not color_map else None, 
+        range_color=[40, 95] if not color_map else None,
         text='Genre_List', custom_data=['Genre_List', 'Top_Games'],
         template="plotly_dark"
     )

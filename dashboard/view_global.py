@@ -51,6 +51,30 @@ def get_genre_evolution_data(df: pd.DataFrame) -> pd.DataFrame:
     
     return df_grouped
 
+def get_genre_color_map(df: pd.DataFrame) -> dict:
+    """
+    Genera un diccionario que asocia cada género único a un color específico
+    para garantizar la coherencia cromática en todas las gráficas de la vista global.
+    """
+    if 'genres' not in df.columns:
+        return {}
+    
+    # Extraer géneros únicos ignorando nulos y 'Desconocido'
+    df_clean = df.dropna(subset=['genres'])
+    df_clean = df_clean[df_clean['genres'] != '']
+    df_clean = df_clean[df_clean['genres'] != 'Desconocido']
+    
+    genres_series = df_clean['genres'].astype(str).str.split(', ').explode()
+    unique_genres = sorted(genres_series.unique().tolist())
+    
+    import plotly.express as px
+    import itertools
+    # Usar exclusivamente la paleta Vivid (cíclica) para garantizar saturación 
+    # y permitir que el texto blanco sea legible.
+    colors = px.colors.qualitative.Vivid
+    
+    return dict(zip(unique_genres, itertools.cycle(colors)))
+
 def get_sales_race_data() -> pd.DataFrame:
     """
     Procesa el acumulado de ventas históricas año a año por género a partir de la tabla game_sales.
@@ -113,7 +137,7 @@ def get_sales_race_data() -> pd.DataFrame:
     
     return df_merged
 
-def create_genre_evolution_chart(df_grouped: pd.DataFrame):
+def create_genre_evolution_chart(df_grouped: pd.DataFrame, color_map: dict = None):
     if df_grouped.empty:
         return None
         
@@ -130,7 +154,8 @@ def create_genre_evolution_chart(df_grouped: pd.DataFrame):
         color='Género',
         line_group='Género',
         category_orders={'Género': genre_order},
-        color_discrete_sequence=px.colors.qualitative.Vivid,
+        color_discrete_map=color_map if color_map else {},
+        color_discrete_sequence=px.colors.qualitative.Vivid if not color_map else None,
         template="plotly_dark"
     )
     
@@ -169,6 +194,9 @@ def render_global_vision_module():
         st.warning("⚠️ No se encontraron juegos en la base de datos. Por favor, ejecuta el pipeline primero.")
         return
         
+    # Extraemos el mapa de colores unificado para que todas las gráficas de género sean coherentes
+    color_map = get_genre_color_map(df_games_all)
+        
     # --- Capítulo 1: Comparativa Intersectorial (Macro Industria) ---
     st.subheader("Capítulo 1: El Gigante del Entretenimiento")
     st.markdown("""
@@ -195,7 +223,7 @@ def render_global_vision_module():
     """)
     
     df_evolution = get_genre_evolution_data(df_games_all)
-    fig_area = create_genre_evolution_chart(df_evolution)
+    fig_area = create_genre_evolution_chart(df_evolution, color_map=color_map)
     
     if fig_area:
         st.plotly_chart(fig_area, width="stretch")
@@ -212,7 +240,7 @@ def render_global_vision_module():
     Las zonas superiores representan géneros con alta aclamación crítica, mientras que el eje horizontal muestra el volumen de oferta comercial.
     """)
     
-    fig_portfolio = create_genre_and_score_chart(df_games_all)
+    fig_portfolio = create_genre_and_score_chart(df_games_all, color_map=color_map)
     
     if fig_portfolio:
         st.plotly_chart(fig_portfolio, width="stretch")
@@ -231,7 +259,7 @@ def render_global_vision_module():
     
     df_race = get_sales_race_data()
     if not df_race.empty:
-        fig_race = create_genre_race_chart(df_race)
+        fig_race = create_genre_race_chart(df_race, color_map=color_map)
         st.plotly_chart(fig_race, width="stretch")
     else:
         st.info("ℹ️ No hay datos de ventas de VGChartz suficientes para animar la carrera de géneros.")

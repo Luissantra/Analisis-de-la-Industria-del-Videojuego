@@ -133,7 +133,7 @@ def create_intersectoral_chart(df: pd.DataFrame) -> go.Figure:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  2. Bar-chart race de géneros de videojuegos
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
+def create_genre_race_chart(df: pd.DataFrame, color_map: dict = None) -> go.Figure:
     """Crea un bar-chart race animado que muestra la evolución acumulada
     de ventas de videojuegos por género a lo largo del tiempo (1990-2020).
 
@@ -170,7 +170,8 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
         orientation="h",
         animation_frame="Año",
         text="Texto_Barra",
-        color_discrete_sequence=px.colors.qualitative.Vivid,
+        color_discrete_map=color_map if color_map else {},
+        color_discrete_sequence=px.colors.qualitative.Vivid if not color_map else None,
         labels={
             "Ventas_Acumuladas": "Ventas Acumuladas (Millones)",
             "Género": "Género",
@@ -197,7 +198,7 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
     for frame in fig.frames:
         frame_year = float(frame.name)
         max_val = df_top[df_top["Año"] == frame_year]["Ventas_Acumuladas"].max()
-        # Dar un 12% de margen a la derecha para que las etiquetas "outside" de texto no se solapen o corten
+        # Dar un 15% de margen a la derecha
         x_max = max_val * 1.15 if max_val > 0 else 10
         frame.layout.update(xaxis=dict(range=[0, x_max]))
 
