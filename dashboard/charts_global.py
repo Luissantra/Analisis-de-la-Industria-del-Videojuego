@@ -151,55 +151,51 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
         Figura Plotly animada lista para renderizar en Streamlit.
     """
 
+    # ── Calcular Rank por frame ──
+    # Para que las barras se muevan verticalmente de forma fluida, el eje Y debe ser numérico (el rango).
+    df["Rank"] = df.groupby("Año")["Ventas_Acumuladas"].rank(method="first", ascending=False)
+    
     # ── Filtrar Top-10 géneros por frame ──
-    frames: list[pd.DataFrame] = []
-    for year, group in df.groupby("Año"):
-        top10 = (
-            group
-            .nlargest(10, "Ventas_Acumuladas")
-            .sort_values("Ventas_Acumuladas", ascending=True)   # ascendente para que el mayor quede arriba
-        )
-        frames.append(top10)
-
-    df_top = pd.concat(frames, ignore_index=True)
-
-    # Asegurar tipo categórico ordenado para eje Y consistente
-    df_top["Género"] = df_top["Género"].astype(str)
+    df_top = df[df["Rank"] <= 10].copy()
+    
+    # Crear texto personalizado (Género + Ventas)
+    df_top["Texto_Barra"] = df_top["Género"] + " (" + df_top["Ventas_Acumuladas"].map(lambda x: f"{x:,.1f}M") + ")"
 
     # ── Figura animada con Plotly Express ──
     fig = px.bar(
         df_top,
         x="Ventas_Acumuladas",
-        y="Género",
+        y="Rank",
         color="Género",
         orientation="h",
         animation_frame="Año",
-        text="Ventas_Acumuladas",
+        text="Texto_Barra",
         color_discrete_sequence=px.colors.qualitative.Vivid,
         labels={
-            "Ventas_Acumuladas": "Ventas Acumuladas (Millones de Copias)",
+            "Ventas_Acumuladas": "Ventas Acumuladas (Millones)",
             "Género": "Género",
             "Año": "Año",
+            "Rank": "Ranking",
         },
     )
 
     # ── Estilo de las barras y etiquetas ──
     fig.update_traces(
-        texttemplate="%{text:,.1f}M",
         textposition="outside",
-        textfont=dict(size=11, color="#E2E8F0"),
+        textfont=dict(size=13, color="#E2E8F0"), # Aumentado el tamaño de la etiqueta
         marker_line_width=0,
         marker_cornerradius=4,
         hovertemplate=(
-            "<b>%{y}</b><br>"
+            "<b>%{customdata[0]}</b><br>"
             "Ventas acumuladas: %{x:,.1f}M copias"
             "<extra></extra>"
         ),
+        customdata=df_top[["Género"]],
     )
 
     # ── Escala dinámica del eje X frame por frame ──
     for frame in fig.frames:
-        frame_year = int(frame.name)
+        frame_year = float(frame.name)
         max_val = df_top[df_top["Año"] == frame_year]["Ventas_Acumuladas"].max()
         # Dar un 12% de margen a la derecha para que las etiquetas "outside" de texto no se solapen o corten
         x_max = max_val * 1.15 if max_val > 0 else 10
@@ -213,12 +209,12 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
 
     # ── Configurar tiempos de animación más fluidos ──
     fig.layout.updatemenus[0].buttons[0].args[1]["frame"] = dict(
-        duration=650,
+        duration=150,
         redraw=True,
     )
     fig.layout.updatemenus[0].buttons[0].args[1]["transition"] = dict(
-        duration=450,
-        easing="cubic-in-out",
+        duration=100,
+        easing="linear", # linear es más suave para interpolaciones de tiempo continuas
     )
 
     # Estilizar botones Play / Pause
@@ -228,7 +224,7 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
                 type="buttons",
                 showactive=False,
                 x=0.02,
-                y=-0.06,
+                y=-0.18, # Bajamos más los botones
                 xanchor="left",
                 yanchor="top",
                 font=dict(size=13, color="#E2E8F0"),
@@ -241,8 +237,8 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
                         args=[
                             None,
                             dict(
-                                frame=dict(duration=650, redraw=True),
-                                transition=dict(duration=450, easing="cubic-in-out"),
+                                frame=dict(duration=150, redraw=True),
+                                transition=dict(duration=100, easing="linear"),
                                 fromcurrent=True,
                                 mode="immediate",
                             ),
@@ -266,12 +262,27 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
 
     # ── Slider de años ──
     if fig.layout.sliders and len(fig.layout.sliders) > 0:
-        fig.layout.sliders[0].update(
+        slider = fig.layout.sliders[0]
+        
+        # Ocultar las etiquetas de los pasos intermedios (ej. 1990.2)
+        for step in slider.steps:
+            frame_name = step.args[0][0]
+            try:
+                val = float(frame_name)
+                # Evitar errores de precisión flotante comparando con el entero más cercano
+                if abs(val - round(val)) < 0.01:
+                    step.label = str(int(round(val)))  # Mostrar etiqueta en años enteros
+                else:
+                    step.label = ""  # Ocultar etiqueta en los frames interpolados
+            except (ValueError, TypeError):
+                pass
+                
+        slider.update(
             currentvalue=dict(
                 prefix="Año: ",
                 font=dict(size=14, color="#C4B5FD"),
             ),
-            font=dict(color="#94A3B8"),
+            font=dict(size=10, color="#94A3B8"),  # Tamaño 10 para que quepan todos los años
             activebgcolor="#8B5CF6",
             bordercolor="rgba(148,163,184,0.15)",
             bgcolor="rgba(30,41,59,0.5)",
@@ -294,12 +305,13 @@ def create_genre_race_chart(df: pd.DataFrame) -> go.Figure:
         ),
         yaxis=dict(
             title="",
+            range=[10.5, 0.5], # 1 arriba, 10 abajo
             showgrid=False,
             showline=False,
-            categoryorder="total ascending",   # mayor arriba
+            showticklabels=False, # Ocultamos los números del 1 al 10, ya usamos el texto de la barra
         ),
-        showlegend=False,                       # el color + etiqueta basta
-        height=560,
+        showlegend=False,
+        height=600, # Un poco más alto para dejar espacio a los botones abajo
         hoverlabel=dict(
             bgcolor="rgba(15,23,42,0.85)",
             bordercolor="rgba(148,163,184,0.25)",

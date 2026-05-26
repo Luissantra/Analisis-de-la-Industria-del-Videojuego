@@ -54,9 +54,10 @@ def get_genre_evolution_data(df: pd.DataFrame) -> pd.DataFrame:
 def get_sales_race_data() -> pd.DataFrame:
     """
     Procesa el acumulado de ventas históricas año a año por género a partir de la tabla game_sales.
-    Rellena huecos con 0 para una animación fluida en el Bar Chart Race de Plotly.
+    Rellena huecos con 0 e interpola (pasos de 0.2 años) para una animación fluida en el Bar Chart Race de Plotly.
     """
     import sqlite3
+    import numpy as np
     try:
         conn = sqlite3.connect(config.DATABASE_PATH)
         query = """
@@ -78,7 +79,7 @@ def get_sales_race_data() -> pd.DataFrame:
     min_year = 1990
     max_year = 2020
     
-    # Crear un producto cartesiano de Años x Géneros para no tener saltos de frames
+    # 1. Crear un producto cartesiano de Años x Géneros para no tener saltos de frames
     all_years = range(min_year, max_year + 1)
     all_genres = df_sales['Género'].unique()
     idx = pd.MultiIndex.from_product([all_years, all_genres], names=['Año', 'Género'])
@@ -89,7 +90,28 @@ def get_sales_race_data() -> pd.DataFrame:
     df_filled = df_filled.sort_values(by=['Género', 'Año'])
     df_filled['Ventas_Acumuladas'] = df_filled.groupby('Género')['Ventas'].cumsum()
     
-    return df_filled
+    # 2. Interpolación lineal para conseguir una animación mucho más suave
+    # Generamos pasos de 0.2 años (1990.0, 1990.2, 1990.4...)
+    interp_years = np.arange(min_year, max_year + 0.2, 0.2)
+    interp_years = np.round(interp_years, 1)  # Redondeamos a un decimal
+    idx_interp = pd.MultiIndex.from_product([interp_years, all_genres], names=['Año', 'Género'])
+    
+    # Preparamos el dataframe vacío con los años interpolados
+    df_interp = pd.DataFrame(index=idx_interp).reset_index()
+    
+    # Mezclamos los datos acumulados reales
+    df_merged = pd.merge(df_interp, df_filled[['Año', 'Género', 'Ventas_Acumuladas']], on=['Año', 'Género'], how='left')
+    
+    # Para cada género, interpolamos los valores faltantes en los frames decimales
+    df_merged['Ventas_Acumuladas'] = df_merged.groupby('Género')['Ventas_Acumuladas'].transform(
+        lambda x: x.interpolate(method='linear')
+    )
+    
+    # Aseguramos el orden de tiempo y aplicamos ffill/bfill por si los extremos quedan en NaN
+    df_merged = df_merged.sort_values(by=['Año', 'Género'])
+    df_merged['Ventas_Acumuladas'] = df_merged.groupby('Género')['Ventas_Acumuladas'].ffill().bfill()
+    
+    return df_merged
 
 def create_genre_evolution_chart(df_grouped: pd.DataFrame):
     if df_grouped.empty:
