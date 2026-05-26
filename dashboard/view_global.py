@@ -97,6 +97,9 @@ def create_genre_evolution_chart(df_grouped: pd.DataFrame):
         
     df_grouped = df_grouped.sort_values(by='Año')
     
+    # Calcular el total de juegos por género para ordenar la pila de abajo hacia arriba (mayor a menor volumen)
+    genre_order = df_grouped.groupby('Género')['Cantidad de Juegos'].sum().sort_values(ascending=False).index.tolist()
+    
     import plotly.express as px
     fig = px.area(
         df_grouped,
@@ -104,6 +107,7 @@ def create_genre_evolution_chart(df_grouped: pd.DataFrame):
         y='Cantidad de Juegos',
         color='Género',
         line_group='Género',
+        category_orders={'Género': genre_order},
         color_discrete_sequence=px.colors.qualitative.Vivid,
         template="plotly_dark"
     )

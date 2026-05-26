@@ -293,6 +293,16 @@ def create_acquisition_timeline_chart(df, color="#0070FF"):
     ).reset_index()
     
     timeline_stats = timeline_stats.sort_values('Acquisition_Year')
+    
+    # Completar la serie temporal de años para que sea una representación fiel
+    min_year = timeline_stats['Acquisition_Year'].min()
+    max_year = timeline_stats['Acquisition_Year'].max()
+    if pd.notna(min_year) and pd.notna(max_year):
+        all_years = list(range(int(min_year), int(max_year) + 1))
+        timeline_stats = timeline_stats.set_index('Acquisition_Year').reindex(all_years).reset_index()
+        timeline_stats['Count'] = timeline_stats['Count'].fillna(0).astype(int)
+        timeline_stats['Studios'] = timeline_stats['Studios'].fillna("Ninguna adquisición").replace("", "Ninguna adquisición")
+        
     timeline_stats['Cumulative_Count'] = timeline_stats['Count'].cumsum()
 
     # 4. Construir el gráfico combinado
@@ -347,7 +357,7 @@ def create_acquisition_timeline_chart(df, color="#0070FF"):
         xaxis_title="Año",
         yaxis_title="Cantidad de Estudios",
         xaxis=dict(type='category', gridcolor="rgba(148,163,184,0.05)"),
-        yaxis=dict(gridcolor="rgba(148,163,184,0.08)", zeroline=False),
+        yaxis=dict(gridcolor="rgba(148,163,184,0.08)", zeroline=False, rangemode="tozero"),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         legend=dict(
