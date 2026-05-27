@@ -11,3 +11,4 @@ streamlit>=1.55
 streamlit-folium>=0.19
 folium>=0.16
 SQLAlchemy>=2.0
+pytrends>=4.9

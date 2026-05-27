@@ -29,8 +29,23 @@ def render_map_module(filtered_df, mode="Producción"):
         except Exception as e:
             st.error(f"Error al cargar datos del mercado: {e}")
             return
-             # Calcular métricas dinámicas
+        # Calcular métricas dinámicas
         total_rev = df_market["revenue_bn"].sum()
+        comp_path = config.BASE_DIR / "config_data" / "industry_comparison.json"
+        if comp_path.exists():
+            try:
+                with open(comp_path, "r", encoding="utf-8") as f:
+                    comp_data = json.load(f)
+                df_comp = pd.DataFrame(comp_data)
+                if not df_comp.empty and "gaming" in df_comp.columns:
+                    row_2024 = df_comp[df_comp["year"] == 2024]
+                    if not row_2024.empty:
+                        total_rev = float(row_2024["gaming"].values[0])
+                    else:
+                        total_rev = float(df_comp.sort_values("year", ascending=False)["gaming"].values[0])
+            except Exception as e:
+                pass
+
         total_players = df_market["players_m"].sum()
         weighted_arpu = (total_rev * 1000) / total_players
         
@@ -81,23 +96,42 @@ def render_map_module(filtered_df, mode="Producción"):
         df_market["arpu"] = (df_market["revenue_bn"] * 1000) / df_market["players_m"]
         df_market["global_revenue_pct"] = (df_market["revenue_bn"] / total_rev) * 100
         
-        # Mapa Choropleth con Plotly usando paleta Tealgrn
+        # Selector de métrica para el mapa
+        st.write("")
+        metric_map = st.radio(
+            "Selecciona la métrica a visualizar en el mapa:",
+            ["💰 Ingresos ($Bn)", "👥 Audiencia (Millones)"],
+            horizontal=True
+        )
+        
+        if metric_map == "💰 Ingresos ($Bn)":
+            color_col = "revenue_bn"
+            color_scale = "Tealgrn"
+            label_text = "Ingresos ($Bn)"
+            color_title = "Ingresos<br>($Bn)"
+        else:
+            color_col = "players_m"
+            color_scale = "Blues"
+            label_text = "Audiencia (M)"
+            color_title = "Audiencia<br>(Millones)"
+        
+        # Mapa Choropleth con Plotly
         fig = px.choropleth(
             df_market,
             locations="iso_alpha",
-            color="revenue_bn",
+            color=color_col,
             hover_name="country",
-            color_continuous_scale="Tealgrn",
-            labels={'revenue_bn': 'Ingresos ($Bn)'},
+            color_continuous_scale=color_scale,
+            labels={color_col: label_text},
             template="plotly_dark",
-            custom_data=["region", "players_m", "arpu", "global_revenue_pct"]
+            custom_data=["region", "players_m", "arpu", "global_revenue_pct", "revenue_bn"]
         )
         
         fig.update_traces(
             hovertemplate=(
                 "<b>%{hovertext}</b><br><br>"
                 "Región: %{customdata[0]}<br>"
-                "Ingresos: $%{z:.1f} Bn (%{customdata[3]:.1f}%)<br>"
+                "Ingresos: $%{customdata[4]:.1f} Bn (%{customdata[3]:.1f}%)<br>"
                 "Jugadores: %{customdata[1]:,d}M<br>"
                 "ARPU: $%{customdata[2]:.2f}/año<extra></extra>"
             )
@@ -120,7 +154,7 @@ def render_map_module(filtered_df, mode="Producción"):
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             coloraxis_colorbar=dict(
-                title="Ingresos<br>($Bn)",
+                title=color_title,
                 thickness=15,
                 len=0.6,
                 x=0.92,

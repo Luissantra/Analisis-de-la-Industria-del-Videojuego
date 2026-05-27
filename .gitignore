@@ -32,3 +32,6 @@ data/
 
 # Documentación académica local (excluida del repo)
 docs/
+
+# Antigravity
+antigravityrules.md

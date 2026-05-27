@@ -118,7 +118,7 @@ def create_treemap_chart(df):
     
     # No rellenamos con media neutra para que Plotly los deje grises transparentes/heredados naturalmente
     # Añadimos una columna en texto para el tooltip
-    df_grouped['Avg_Metacritic_Str'] = df_grouped['Avg_Metacritic'].apply(lambda x: f"{x:.1f}" if pd.notna(x) else "N/A")
+    df_grouped['Avg_Metacritic_Str'] = df_grouped['Avg_Metacritic'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
     
     fig = px.treemap(
         df_grouped,
@@ -181,9 +181,7 @@ def create_genre_and_score_chart(df, color="#0070FF", color_map=None):
     ).reset_index()
     
     # Limpiar nulos para el gráfico 2D
-    genre_stats = genre_stats.dropna(subset=['Avg_Metacritic'])
-    if genre_stats.empty:
-        return None
+    genre_stats['Avg_Metacritic_Str'] = genre_stats['Avg_Metacritic'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
     
     # Matriz de Portfolio (Bubble Chart)
     fig = px.scatter(
@@ -192,14 +190,14 @@ def create_genre_and_score_chart(df, color="#0070FF", color_map=None):
         color_discrete_map=color_map if color_map else None,
         color_continuous_scale='RdYlGn' if not color_map else None, 
         range_color=[40, 95] if not color_map else None,
-        text='Genre_List', custom_data=['Genre_List', 'Top_Games'],
+        text='Genre_List', custom_data=['Genre_List', 'Top_Games', 'Avg_Metacritic_Str'],
         template="plotly_dark"
     )
     
     fig.update_traces(
         textposition='top center',
         marker=dict(line=dict(color='#0E1117', width=1)),
-        hovertemplate="<b>%{customdata[0]}</b><br>Juegos: %{x}<br>Nota Media: %{y:.1f}<br><br><b>Destacados:</b><br> • %{customdata[1]}<extra></extra>"
+        hovertemplate="<b>%{customdata[0]}</b><br>Juegos: %{x}<br>Nota Media: %{customdata[2]}<br><br><b>Destacados:</b><br> • %{customdata[1]}<extra></extra>"
     )
     
     fig.update_layout(
@@ -390,32 +388,36 @@ def create_score_distribution_chart(df, color="#0070FF", is_global=False):
 
     if is_global:
         df_scores['Ecosistema'] = 'Industria Global'
+        df_scores['avg_metacritic_str'] = df_scores['Metacritic_Num'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
+        df_scores['top_game_metacritic_str'] = df_scores['top_game_metacritic'].apply(lambda x: f"{float(x):.2f}".rstrip('0').rstrip('.') if pd.notna(x) and str(x) != 'N/A' else "N/A")
         fig = px.violin(
             df_scores,
             x='Ecosistema',
             y='Metacritic_Num',
             box=True,
             points="all",
-            custom_data=['Studio Name', 'Top_Game', 'Parent'],
+            custom_data=['Studio Name', 'Top_Game', 'Parent', 'top_game_metacritic_str', 'avg_metacritic_str'],
             color_discrete_sequence=["#888888"],
             template="plotly_dark"
         )
         fig.update_traces(
-            hovertemplate="<b>%{customdata[0]}</b> (%{customdata[2]})<br>Juego: %{customdata[1]}<br>Nota: %{y}<extra></extra>",
+            hovertemplate="<b>%{customdata[0]}</b> (%{customdata[2]})<br>Media del Estudio: %{customdata[4]}<br>🏆 Juego Destacado: %{customdata[1]} (Nota: %{customdata[3]})<extra></extra>",
             meanline_visible=True
         )
     else:
+        df_scores['avg_metacritic_str'] = df_scores['Metacritic_Num'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
+        df_scores['top_game_metacritic_str'] = df_scores['top_game_metacritic'].apply(lambda x: f"{float(x):.2f}".rstrip('0').rstrip('.') if pd.notna(x) and str(x) != 'N/A' else "N/A")
         fig = px.violin(
             df_scores,
             y='Metacritic_Num',
             box=True,
             points="all",
-            custom_data=['Studio Name', 'Top_Game'],
+            custom_data=['Studio Name', 'Top_Game', 'top_game_metacritic_str', 'avg_metacritic_str'],
             color_discrete_sequence=[color],
             template="plotly_dark"
         )
         fig.update_traces(
-            hovertemplate="<b>%{customdata[0]}</b><br>Juego: %{customdata[1]}<br>Nota: %{y}<extra></extra>",
+            hovertemplate="<b>%{customdata[0]}</b><br>Media del Estudio: %{customdata[3]}<br>🏆 Juego Destacado: %{customdata[1]} (Nota: %{customdata[2]})<extra></extra>",
             meanline_visible=True
         )
 
@@ -498,6 +500,8 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
     y_min = min_meta - meta_range * 0.15
     y_max = max_meta + meta_range * 0.15
     
+    g['avg_meta_str'] = g['avg_meta'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
+    
     fig = px.scatter(
         g,
         x='avg_pop',
@@ -509,7 +513,7 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
         hover_name='Parent',
         template="plotly_dark",
         size_max=32,
-        custom_data=['total_games'],
+        custom_data=['total_games', 'avg_meta_str'],
         title="Cuadrante Mágico del Videojuego: Conglomerados y Grandes Publishers"
     )
     
@@ -519,7 +523,7 @@ def create_magic_quadrant_chart(df: pd.DataFrame) -> go.Figure | None:
         marker=dict(line=dict(color='#0E1117', width=1.5), opacity=0.9),
         hovertemplate=(
             "<b>%{hovertext}</b><br><br>"
-            "Calidad Media (Metacritic): %{y:.1f}<br>"
+            "Calidad Media (Metacritic): %{customdata[1]}<br>"
             "Popularidad Media (Reviews): %{x:,.0f}<br>"
             "Total Juegos en Portfolio: %{customdata[0]:,d}<extra></extra>"
         )

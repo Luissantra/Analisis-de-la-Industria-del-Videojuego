@@ -159,7 +159,7 @@ elif menu == "Mapa de estudios":
         search_query = st.sidebar.text_input("Buscar por nombre de estudio:")
 
         st.sidebar.header("Filtros de Clasificación")
-        only_notables = st.sidebar.toggle("Solo estudios notables", value=False)
+        only_notables = st.sidebar.toggle("Solo estudios notables", value=True)
         
         tier_options = ["AAA", "AA", "Indie"]
         selected_tiers = st.sidebar.multiselect("Nivel del estudio (Tier):", options=tier_options, default=tier_options)
@@ -191,10 +191,15 @@ elif menu == "Mapa de estudios":
             # Adaptative columns
             if only_notables:
                 display_cols = ["Studio Name", "City", "Country", "studio_tier", "Parent", "Top_Game", "Metacritic", "Genres"]
+                df_to_show = filtered_df[display_cols].copy()
+                # Formatear Metacritic con coma y como mucho 2 decimales
+                df_to_show['Metacritic'] = pd.to_numeric(df_to_show['Metacritic'], errors='coerce')
+                df_to_show['Metacritic'] = df_to_show['Metacritic'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
             else:
                 display_cols = ["Studio Name", "City", "Country", "Region", "studio_tier"]
+                df_to_show = filtered_df[display_cols]
                 
-            st.dataframe(filtered_df[display_cols], width="stretch", hide_index=True)
+            st.dataframe(df_to_show, width="stretch", hide_index=True)
     else:
         # Renderizamos el mapa en modo Mercado
         render_map_module(None, mode="Mercado")

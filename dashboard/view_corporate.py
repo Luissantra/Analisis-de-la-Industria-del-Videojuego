@@ -223,6 +223,10 @@ def render_corporate_module():
         with col_lista:
             # Preparamos el dataframe para visualización
             df_display = df_filtrado[['Studio Name', 'City', 'Country', 'Acquisition_Year', 'Total_Games', 'Top_Game', 'avg_metacritic']].copy()
+            # Formatear la Nota Media con coma y como mucho 2 decimales
+            df_display['avg_metacritic'] = pd.to_numeric(df_display['avg_metacritic'], errors='coerce')
+            df_display['avg_metacritic'] = df_display['avg_metacritic'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
+            
             df_display.rename(columns={
                 'Studio Name': 'Estudio',
                 'City': 'Ciudad',
@@ -285,6 +289,10 @@ def render_corporate_module():
         if not df_games_filt.empty:
             df_top_10 = df_games_filt.sort_values(by='metacritic', ascending=False).head(10)
             df_top_10 = df_top_10[['title', 'studio', 'metacritic', 'release_date']]
+            # Formatear Metacritic
+            df_top_10['metacritic'] = pd.to_numeric(df_top_10['metacritic'], errors='coerce')
+            df_top_10['metacritic'] = df_top_10['metacritic'].apply(lambda x: f"{x:.2f}".rstrip('0').rstrip('.') if pd.notna(x) else "N/A")
+            
             df_top_10.rename(columns={
                 'title': 'Título',
                 'studio': 'Desarrollador',

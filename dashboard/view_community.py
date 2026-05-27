@@ -3,8 +3,14 @@ import pandas as pd
 import sqlite3
 import os
 import config
+from datetime import datetime
+import plotly.express as px
+from pytrends.request import TrendReq
+
 from model_corporate import get_all_games_data
 from models import get_games_with_sales_data
+from view_global import get_genre_color_map
+from charts_corporate import PARENT_COLOR_MAP
 from charts_community import (
     plot_critic_vs_user, 
     plot_top_controversies, 
@@ -24,6 +30,9 @@ def render_community_module():
     with tab_analytics:
         # Cargamos la capa de juegos individuales
         df = get_all_games_data()
+        
+        # Generar el mapa de colores unificado para géneros a partir del DataFrame completo
+        color_map = get_genre_color_map(df)
         
         # Validación de seguridad defensiva
         if 'rawg_rating' not in df.columns:
@@ -58,7 +67,7 @@ def render_community_module():
             ¿Cuánto tiempo invierten los jugadores en sus títulos favoritos? El tiempo de juego medio (Playtime) 
             cruza la duración con la calidad media, evaluando el valor real de diversión percibido.
             """)
-            fig_play = create_playtime_scatter_chart(df_filtered)
+            fig_play = create_playtime_scatter_chart(df_filtered, color_map=color_map)
             if fig_play: st.plotly_chart(fig_play, width="stretch")
         
             st.divider()
@@ -99,7 +108,7 @@ def render_community_module():
             de los usuarios frente a la nota de calidad, identificando fenómenos virales.
             """)
             
-            fig_social = plot_social_traction(df_filtered)
+            fig_social = plot_social_traction(df_filtered, corporate_color_map=PARENT_COLOR_MAP)
             if fig_social:
                 st.plotly_chart(fig_social, width="stretch")
                 
@@ -115,7 +124,7 @@ def render_community_module():
             # Aplicar filtro de reseñas mínimo
             df_sales = df_sales[df_sales['rawg_ratings_count'] >= min_reviews]
             
-            fig_hype_sales = create_hype_vs_sales_chart(df_sales)
+            fig_hype_sales = create_hype_vs_sales_chart(df_sales, color_map=color_map)
             if fig_hype_sales is not None:
                 st.plotly_chart(fig_hype_sales, width="stretch")
             else:
@@ -141,18 +150,48 @@ def render_community_module():
             timeframe_map = {
                 "Últimos 12 meses": "today 12-m",
                 "Últimos 5 años": "today 5-y",
-                "Últimos 15 años": "today 15-y",
                 "Histórico (Desde 2004)": "all"
             }
-            timeframe_value = timeframe_map[timeframe_option]
             
-            html_code = f"""
-            <script type="text/javascript" src="https://ssl.gstatic.com/trends_nrtr/3720_RC01/embed_loader.js"></script>
-            <script type="text/javascript">
-              trends.embed.renderExploreWidget("TIMESERIES", {{"comparisonItem":[{{"keyword":"{search_term}","geo":"","time":"{timeframe_value}"}}],"category":0,"property":""}}, {{"exploreQuery":"q={search_term}&date={timeframe_value}","guestPath":"https://trends.google.es:443/trends/embed/"}});
-            </script>
-            """
-            components.html(html_code, height=450)
+            if timeframe_option == "Últimos 15 años":
+                # Google Trends no soporta "today 15-y", debemos pasar fechas exactas
+                today_date = datetime.now()
+                past_date = today_date.replace(year=today_date.year - 15)
+                timeframe_value = f"{past_date.strftime('%Y-%m-%d')} {today_date.strftime('%Y-%m-%d')}"
+            else:
+                timeframe_value = timeframe_map[timeframe_option]
+            
+            try:
+                with st.spinner("Obteniendo datos de Google Trends..."):
+                    # Inicializar pytrends y obtener los datos
+                    pytrends = TrendReq(hl='es', tz=0)
+                    pytrends.build_payload([search_term], timeframe=timeframe_value)
+                    df_trends = pytrends.interest_over_time()
+                    
+                    if not df_trends.empty:
+                        df_trends = df_trends.reset_index()
+                        
+                        # Generar un gráfico nativo de Plotly en lugar del iframe inestable de Google
+                        fig_trends = px.line(
+                            df_trends,
+                            x='date',
+                            y=search_term,
+                            title=f"Interés de búsqueda a lo largo del tiempo: {search_term}",
+                            labels={'date': 'Fecha', search_term: 'Interés Relativo (0-100)'},
+                            template="plotly_dark",
+                            color_discrete_sequence=["#00b4d8"]
+                        )
+                        fig_trends.update_layout(
+                            margin=dict(l=0, r=0, t=40, b=0),
+                            hovermode="x unified",
+                            xaxis_title="",
+                            yaxis_title="Interés de búsqueda"
+                        )
+                        st.plotly_chart(fig_trends, use_container_width=True)
+                    else:
+                        st.warning(f"No hay suficientes datos de búsqueda para el término: '{search_term}' en el periodo seleccionado.")
+            except Exception as e:
+                st.error(f"Error al conectar con Google Trends. Esto suele deberse a límites de uso de la API o problemas de conexión temporal. Inténtalo de nuevo más tarde.")
             
     with tab_timeline:
         st.subheader("📅 Cronología de los Grandes Hitos del Siglo XXI")
@@ -359,8 +398,14 @@ def render_community_module():
                 year = row['release_year']
                 rawg_id = row['rawg_id']
                 studio = row['studio']
-                metacritic = row['metacritic']
-                rating = row['rawg_rating'] or "N/A"
+                
+                # Formatear metacritic con coma y como mucho 2 decimales
+                metacritic_val = pd.to_numeric(row['metacritic'], errors='coerce')
+                metacritic = f"{metacritic_val:.2f}".rstrip('0').rstrip('.') if pd.notna(metacritic_val) else "N/A"
+                
+                # Formatear rawg_rating con coma y como mucho 2 decimales
+                rating_val = pd.to_numeric(row['rawg_rating'], errors='coerce')
+                rating = f"{rating_val:.2f}".rstrip('0').rstrip('.') if pd.notna(rating_val) else "N/A"
                 
                 cover_url = get_game_cover_url(rawg_id, title)
                 

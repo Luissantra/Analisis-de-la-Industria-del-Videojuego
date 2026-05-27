@@ -209,7 +209,7 @@ def plot_top_acclaimed(df):
 
     return fig
 
-def plot_social_traction(df):
+def plot_social_traction(df, corporate_color_map=None):
     """
     Crea un Bubble Chart (Scatter) para analizar el volumen de interacción (Hype) 
     frente a la recepción crítica.
@@ -239,6 +239,7 @@ def plot_social_traction(df):
         y='rawg_ratings_count',
         size='rawg_ratings_count',
         color=color_col,
+        color_discrete_map=corporate_color_map if color_col == 'conglomerate' else None,
         hover_name='title',
         custom_data=['studio', 'release_year'],
         template="plotly_dark",
@@ -321,7 +322,7 @@ def create_esrb_distribution_chart(df):
     
     return fig
 
-def create_playtime_scatter_chart(df):
+def create_playtime_scatter_chart(df, color_map=None):
     """
     Crea un scatter plot de Horas de Juego (X) vs Metacritic (Y)
     para medir la 'Eficiencia de Diversión'.
@@ -345,6 +346,7 @@ def create_playtime_scatter_chart(df):
         x='playtime_hours',
         y='metacritic',
         color='main_genre',
+        color_discrete_map=color_map if color_map else {},
         hover_name='title',
         hover_data=['studio', 'metacritic', 'playtime_hours'],
         template="plotly_dark",
@@ -367,7 +369,7 @@ def create_playtime_scatter_chart(df):
     
     return fig
 
-def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
+def create_hype_vs_sales_chart(df: pd.DataFrame, color_map=None) -> go.Figure | None:
     """
     Crea un Scatter Plot de 4 cuadrantes (El Cuadrante del Hype)
     relacionando la popularidad en comunidad (ratings count), calidad profesional (metacritic)
@@ -418,7 +420,8 @@ def create_hype_vs_sales_chart(df: pd.DataFrame) -> go.Figure | None:
         template="plotly_dark",
         size_max=32,
         opacity=0.85,
-        color_discrete_sequence=px.colors.qualitative.Vivid,
+        color_discrete_map=color_map if color_map else {},
+        color_discrete_sequence=px.colors.qualitative.Vivid if not color_map else None,
         title="El Cuadrante del Hype: Popularidad vs Calidad (Tamaño = Ventas en Millones de Copias)"
     )
     
