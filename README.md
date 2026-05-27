@@ -124,7 +124,9 @@ pip install -r requirements.txt
 
 ### Configuración de APIs
 
-Crear un archivo `.env` en la raíz con las siguientes variables (necesarias solo para ejecutar el pipeline de extracción):
+Para configurar las APIs (necesario solo si deseas ejecutar el pipeline de extracción de datos desde cero):
+1. Duplica el archivo `.env.example` que encontrarás en la raíz y renómbralo a `.env`.
+2. Rellena tus propias claves en el archivo `.env`:
 
 ```env
 IGDB_CLIENT_ID=tu_client_id
@@ -132,7 +134,7 @@ IGDB_CLIENT_SECRET=tu_client_secret
 RAWG_API_KEY=tu_api_key
 ```
 
-> **Nota**: Si la base de datos `videogames.db` ya está generada, no necesitas las claves API para lanzar el dashboard.
+> **Nota**: La base de datos ya generada (`videogames.db`) **se incluye en este repositorio** para facilitar la evaluación académica. Por lo tanto, **no necesitas configurar las claves API para lanzar y evaluar el dashboard**.
 
 ---
 

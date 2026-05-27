@@ -18,6 +18,9 @@ data/
 *.sqlite3
 *.csv
 
+# Excepciones: Permitimos la BD final en el repo para facilitar la evaluación académica sin necesidad de ETL
+!data/database/videogames.db
+
 # IDE
 .vscode/
 .idea/
